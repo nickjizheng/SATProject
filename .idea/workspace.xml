@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="a6b8e04b-277a-4c5d-84c1-6c8db151af5e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Java/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/README_AUTH.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/database/create_cart_order_tables.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/database/create_product_tables.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/database/create_user_tables.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/logs/application.2025-08-30.0.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/logs/application.2025-09-05.0.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/logs/application.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/logs/auth.2025-08-30.0.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/logs/auth.2025-09-05.0.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/logs/auth.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/logs/email.2025-08-30.0.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/logs/email.log" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/Application.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/config/CorsConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/config/MailConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/config/MybatisPlusConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/config/WebConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/utils/JwtUtil.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/utils/LogUtils.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/utils/PasswordUtil.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Java/src/main/resources/logback-spring.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/Java/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/LetsChatApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/config/AppConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/config/AppConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/config/CorsConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/controller/FriendController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/controller/GroupController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/controller/MessageController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/controller/ReportController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/controller/UserController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/mapper/FriendMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/mapper/GroupMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/mapper/MessageMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/mapper/ReportMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/mapper/UserMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/mapper/VerifyMapper.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/model/GroupInfo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/model/GroupMemberInfo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/model/GroupMessageInfo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/model/ReturnObj.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/model/UserInfo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/service/EmailService.java" beforeDir="false" afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/service/EmailService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/service/FriendService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/service/GroupService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/service/MessageService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/service/PredictionService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/service/ReportService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/service/UserService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/utils/Encrypt.java" beforeDir="false" afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/utils/Encrypt.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/java/com/sts/letsChat/utils/RandomNumberGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/Java/src/main/java/com/sts/sale/utils/RandomNumberGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/Java/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/resources/mapper/FriendMapper.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/resources/mapper/GroupMapper.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/resources/mapper/MessageMapper.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/resources/mapper/ReportMapper.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/resources/mapper/UserMapper.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Java/src/main/resources/mapper/VerifyMapper.xml" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/Java" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 2
+}]]></component>
+  <component name="ProjectId" id="32MllpGawj1tETSNkcdG13SxROb" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "master",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/nickli/Desktop/SAT Project"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="a6b8e04b-277a-4c5d-84c1-6c8db151af5e" name="Changes" comment="" />
+      <created>1757238476298</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1757238476298</updated>
+    </task>
+    <servers />
+  </component>
+</project>

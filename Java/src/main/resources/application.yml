@@ -1,0 +1,51 @@
+server:
+  port: 8080
+  address: 0.0.0.0  # 监听所有网络接口
+
+socketio:
+  host: 0.0.0.0
+  port: 9092
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/sat?allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456nick
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+      enabled: true
+      file-size-threshold: 0
+  mail:
+    host: smtp.163.com
+    username: lets_chat_auto@163.com
+    password: QBGCBWFZNINYVWXW
+    protocol: smtp
+    port: 465
+    sslEnable: true
+    default-encoding: UTF-8
+    properties:
+      mail:
+        from: lets_chat_auto@163.com
+        debug: false
+        smtp:
+          auth: true
+          connectiontimeout: 60000
+          timeout: 120000
+          writetimeout: 60000
+          ssl:
+            enable: true
+          starttls:
+            enable: true
+
+# 文件上传配置
+file:
+  upload:
+    path: D:/uploads/
+    max-size: 10485760  # 10MB
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.sts.classSync.model

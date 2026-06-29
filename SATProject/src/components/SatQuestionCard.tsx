@@ -6,6 +6,7 @@ import MathRenderer from './MathRenderer';
 import { FavoriteQuestionService } from '../services/favoriteQuestionService';
 import CorrectAnswerCelebration from './CorrectAnswerCelebration';
 import { playCorrectAnswerChime, prepareFeedbackAudio } from '../utils/feedbackAudio';
+import { getUserPreferences } from '../utils/userPreferences';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -39,7 +40,8 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
   useEffect(() => {
     if (!showAnswer || !answerResult?.isCorrect || !celebrateOnCorrect) return;
 
-    setShowCelebration(true);
+    const preferences = getUserPreferences();
+    setShowCelebration(preferences.celebrations);
     playCorrectAnswerChime();
     const timeout = window.setTimeout(() => setShowCelebration(false), 1700);
     return () => window.clearTimeout(timeout);

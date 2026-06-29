@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   BookOpenText,
   ChartNoAxesCombined,
@@ -9,13 +9,14 @@ import {
   CircleUserRound,
   Heart,
   Home,
-  LibraryBig,
-  LogOut,
   Search,
   Sparkles,
   Star,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import AccountModal, { type AccountUser } from './AccountModal';
+import Brand from './Brand';
+import { getUserPreferences, PREFERENCES_EVENT } from '../utils/userPreferences';
 
 interface NavigationProps {
   collapsed: boolean;
@@ -35,7 +36,9 @@ const navItems = [
 export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [userInfo, setUserInfo] = useState<{ username?: string; email?: string } | null>(null);
+  const [userInfo, setUserInfo] = useState<AccountUser | null>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [displayName, setDisplayName] = useState(() => getUserPreferences().displayName);
 
   useEffect(() => {
     const user = localStorage.getItem('user');
@@ -45,6 +48,12 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
       setUserInfo(null);
     }
   }, [location.pathname]);
+
+  useEffect(() => {
+    const updatePreferences = () => setDisplayName(getUserPreferences().displayName);
+    window.addEventListener(PREFERENCES_EVENT, updatePreferences);
+    return () => window.removeEventListener(PREFERENCES_EVENT, updatePreferences);
+  }, []);
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -62,17 +71,7 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
       className="fixed inset-y-0 left-0 z-50 hidden border-r border-stone-900/10 bg-[#173c39] text-white shadow-[18px_0_60px_rgba(26,48,45,.12)] md:flex md:flex-col"
     >
       <button onClick={() => navigate('/home')} className="flex h-24 w-full items-center gap-3 px-6 text-left">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#f4d8cc] text-[#a83f2b] shadow-inner">
-          <LibraryBig size={22} strokeWidth={2.2} />
-        </span>
-        <AnimatePresence initial={false}>
-          {!collapsed && (
-            <motion.span initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} className="overflow-hidden whitespace-nowrap">
-              <strong className="block font-display text-[1.65rem] font-medium leading-none tracking-tight">PeakSAT</strong>
-              <small className="mt-1 block text-[10px] font-bold uppercase tracking-[.2em] text-teal-100/55">Study studio</small>
-            </motion.span>
-          )}
-        </AnimatePresence>
+        <Brand compact={collapsed} inverse />
       </button>
 
       <nav className="flex-1 space-y-1.5 overflow-y-auto px-3 py-4">
@@ -99,18 +98,22 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
         })}
       </nav>
 
-      <div className="m-3 rounded-[1.4rem] border border-white/10 bg-white/6 p-3">
+      <button
+        type="button"
+        onClick={() => setAccountOpen(true)}
+        title={collapsed ? 'Open profile and settings' : undefined}
+        className="m-3 rounded-[1.4rem] border border-white/10 bg-white/6 p-3 text-left transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#e07a5f]"
+      >
         <div className="flex items-center gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#f4d8cc]"><CircleUserRound size={21} /></span>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-extrabold">{userInfo?.username || 'Student'}</p>
+              <p className="truncate text-sm font-extrabold">{displayName || userInfo?.username || 'Student'}</p>
               <p className="truncate text-[10px] text-teal-50/45">{userInfo?.email || 'Ready to practise'}</p>
             </div>
           )}
-          {!collapsed && <button onClick={logout} title="Log out" className="rounded-lg p-2 text-teal-50/50 hover:bg-white/10 hover:text-white"><LogOut size={17} /></button>}
         </div>
-      </div>
+      </button>
 
       <button onClick={() => onCollapse(!collapsed)} className="mx-3 mb-4 flex h-10 items-center justify-center rounded-xl border border-white/10 text-teal-50/55 hover:bg-white/8 hover:text-white">
         {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -132,6 +135,13 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
         );
       })}
     </nav>
+    <AccountModal
+      open={accountOpen}
+      user={userInfo}
+      onClose={() => setAccountOpen(false)}
+      onLogout={logout}
+      onProfileSaved={setDisplayName}
+    />
     </>
   );
 }

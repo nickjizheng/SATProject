@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Spin, message, Typography, Space, Progress, Alert, Row, Col, Statistic, Tag } from 'antd';
+import { Card, Button, Spin, message, Typography, Space, Alert, Row, Col, Statistic, Tag } from 'antd';
 import { ReloadOutlined, RightOutlined, TrophyOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { SatQuestion, AnswerResponse, NextQuestionResponse } from '../types/sat';
 import { SatService } from '../services/satService';
 import SatQuestionCard from '../components/SatQuestionCard';
 
 const { Title, Text } = Typography;
+const QUICK_SESSION_TARGET = 5;
 
 const SatSingleQuestionPage: React.FC = () => {
   const [currentQuestion, setCurrentQuestion] = useState<SatQuestion | null>(null);
@@ -15,10 +16,10 @@ const SatSingleQuestionPage: React.FC = () => {
   const [sessionId, setSessionId] = useState<string>('');
   const [questionStats, setQuestionStats] = useState({
     answeredCount: 0,
-    totalCount: 0,
     hasMoreQuestions: true
   });
   const [showAnswer, setShowAnswer] = useState(false);
+  const [sessionAnswered, setSessionAnswered] = useState(0);
   const [answerSummary, setAnswerSummary] = useState({
     answeredQuestions: 0,
     correctAnswers: 0,
@@ -82,14 +83,12 @@ const SatSingleQuestionPage: React.FC = () => {
         setCurrentQuestion(response.question);
         setQuestionStats({
           answeredCount: response.answeredCount,
-          totalCount: response.totalCount,
           hasMoreQuestions: response.hasMoreQuestions
         });
       } else {
         setCurrentQuestion(null);
         setQuestionStats({
           answeredCount: response.answeredCount,
-          totalCount: response.totalCount,
           hasMoreQuestions: false
         });
         message.info('No more questions with verified answer keys are available.');
@@ -127,6 +126,7 @@ const SatSingleQuestionPage: React.FC = () => {
         ...prev,
         answeredCount: prev.answeredCount + 1
       }));
+      setSessionAnswered(previous => previous + 1);
       await loadAnswerSummary();
 
       message.success(result.isCorrect ? 'Correct answer!' : 'Incorrect answer. Keep going.');
@@ -143,10 +143,6 @@ const SatSingleQuestionPage: React.FC = () => {
       message.info('No more questions available');
     }
   };
-
-  const progressPercent = questionStats.totalCount > 0
-    ? Math.round((questionStats.answeredCount / questionStats.totalCount) * 100)
-    : 0;
 
   return (
     <div style={{
@@ -215,7 +211,7 @@ const SatSingleQuestionPage: React.FC = () => {
           </Row>
         </Card>
 
-        {/* 进度显示 */}
+        {/* Personal result summary. The question-bank size remains private. */}
         <Card
           style={{
             marginBottom: '24px',
@@ -227,17 +223,19 @@ const SatSingleQuestionPage: React.FC = () => {
             <Col xs={24} sm={12} md={8}>
               <div style={{ textAlign: 'center' }}>
                 <Text strong style={{ fontSize: '18px' }}>
-                  Answered {questionStats.answeredCount} / {questionStats.totalCount}
+                  {sessionAnswered} answered this quick session
                 </Text>
-                <Progress
-                  percent={progressPercent}
-                  status={questionStats.hasMoreQuestions ? 'active' : 'success'}
-                  strokeColor={{
-                    '0%': '#108ee9',
-                    '100%': '#87d068',
-                  }}
-                  style={{ marginTop: '8px' }}
-                />
+                <div className="mx-auto mt-3 h-2 max-w-[220px] overflow-hidden rounded-full bg-stone-200">
+                  <div
+                    className="h-full rounded-full bg-[#123d3a] transition-[width] duration-500"
+                    style={{ width: `${Math.min((sessionAnswered / QUICK_SESSION_TARGET) * 100, 100)}%` }}
+                  />
+                </div>
+                <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+                  {sessionAnswered >= QUICK_SESSION_TARGET
+                    ? 'Mini-session complete. Keep going if you have momentum.'
+                    : 'Five questions makes a focused mini-session.'}
+                </Text>
               </div>
             </Col>
             <Col xs={24} sm={12} md={8}>

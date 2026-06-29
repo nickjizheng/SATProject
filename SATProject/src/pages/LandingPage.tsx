@@ -9,7 +9,8 @@ import {
   Check,
   CheckCircle2,
   CircleUserRound,
-  LibraryBig,
+  GraduationCap,
+  Mail,
   Menu,
   Search,
   Sparkles,
@@ -20,6 +21,7 @@ import {
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { cn } from '../lib/utils';
+import Brand from '../components/Brand';
 
 const capabilities = [
   {
@@ -90,13 +92,13 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 border-b border-stone-900/10 bg-[#f6f2e8]/88 backdrop-blur-xl">
         <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-14">
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3">
-            <span className="grid size-11 place-items-center rounded-2xl bg-[#173c39] text-[#f4d8cc]"><LibraryBig size={22} /></span>
-            <span className="text-left"><strong className="block font-display text-[1.65rem] font-medium leading-none">PeakSAT</strong><small className="mt-1 block text-[9px] font-extrabold uppercase tracking-[.22em] text-stone-500">Study studio</small></span>
+            <Brand />
           </button>
           <nav className="hidden items-center gap-8 text-sm font-bold text-stone-600 md:flex">
             <a href="#experience" className="hover:text-teal-800">Try it</a>
             <a href="#features" className="hover:text-teal-800">Features</a>
             <a href="#workflow" className="hover:text-teal-800">How it works</a>
+            <a href="#about" className="hover:text-teal-800">About</a>
           </nav>
           <div className="hidden items-center gap-2 md:flex">
             <Button variant="ghost" onClick={() => navigate('/auth?mode=login')}>Log in</Button>
@@ -107,7 +109,7 @@ export default function LandingPage() {
         <AnimatePresence>
           {mobileMenu && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-stone-900/10 bg-[#f6f2e8] md:hidden">
-              <div className="space-y-2 p-5"><a href="#experience" className="block p-2 font-bold">Try it</a><a href="#features" className="block p-2 font-bold">Features</a><a href="#workflow" className="block p-2 font-bold">How it works</a><Button className="mt-3 w-full" onClick={() => navigate('/auth?mode=register')}>Create account</Button></div>
+              <div className="space-y-2 p-5"><a href="#experience" className="block p-2 font-bold">Try it</a><a href="#features" className="block p-2 font-bold">Features</a><a href="#workflow" className="block p-2 font-bold">How it works</a><a href="#about" className="block p-2 font-bold">About</a><Button className="mt-3 w-full" onClick={() => navigate('/auth?mode=register')}>Create account</Button></div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -119,7 +121,7 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7 }} className="relative z-10">
             <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.18em] text-[#c34f38]"><Sparkles size={14} /> SAT preparation with a memory</p>
             <h1 className="mt-6 max-w-4xl font-display text-[clamp(4rem,8vw,7.8rem)] font-medium leading-[.82] tracking-[-.06em]">Practise.<br /><em className="font-light text-teal-800">Understand.</em><br />Improve.</h1>
-            <p className="mt-9 max-w-xl text-lg leading-8 text-stone-600">PeakSAT brings question practice, answer feedback, progress analytics and vocabulary tools into one calm workspace, so every session builds on the last.</p>
+            <p className="mt-9 max-w-xl text-lg leading-8 text-stone-600">SAT-Buddy brings question practice, answer feedback, progress analytics and vocabulary tools into one calm workspace, so every session builds on the last.</p>
             <div className="mt-9 flex flex-wrap gap-3"><Button size="lg" onClick={() => document.querySelector('#experience')?.scrollIntoView({ behavior: 'smooth' })}>Try a sample question <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=login')}>I already have an account</Button></div>
             <div className="mt-10 flex flex-wrap gap-6 text-xs font-bold uppercase tracking-wider text-stone-500"><span className="flex items-center gap-2"><Check size={15} className="text-teal-700" /> Free to explore</span><span className="flex items-center gap-2"><Check size={15} className="text-teal-700" /> No login for the demo</span></div>
           </motion.div>
@@ -170,10 +172,30 @@ export default function LandingPage() {
           <div className="mx-auto max-w-[1280px]"><div className="grid gap-10 lg:grid-cols-[.7fr_1.3fr]"><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#f1b49f]">How it works</p><h2 className="mt-4 font-display text-5xl font-medium leading-none tracking-[-.04em]">From first answer to next focus.</h2></div><div className="grid gap-4 sm:grid-cols-3">{[['01', 'Create your workspace', 'Verify one account so attempts and saved items remain private and connected.'], ['02', 'Practise your way', 'Choose full sets or single questions, with optional domain targeting.'], ['03', 'Return with context', 'Use your dashboard and saved library to decide what deserves attention next.']].map(([number, title, copy]) => <div key={number} className="rounded-[1.6rem] border border-white/10 bg-white/[.055] p-6"><span className="font-display text-3xl text-[#f1b49f]">{number}</span><h3 className="mt-10 font-display text-2xl font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-white/50">{copy}</p></div>)}</div></div></div>
         </section>
 
+        <section id="about" className="px-5 py-24 sm:px-8 lg:py-32">
+          <div className="mx-auto grid max-w-[1280px] items-center gap-12 lg:grid-cols-[.8fr_1.2fr]">
+            <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#c34f38]">The student behind SAT-Buddy</p>
+              <h2 className="mt-4 font-display text-5xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Built from the study desk, <em className="font-light text-teal-800">not a boardroom.</em></h2>
+            </motion.div>
+            <Card className="overflow-hidden p-7 sm:p-10">
+              <div className="flex flex-col gap-8 sm:flex-row sm:items-center">
+                <div className="grid size-28 shrink-0 place-items-center rounded-[2rem] bg-[#123d3a]"><img src="/sat-buddy-mark.svg" alt="SAT-Buddy mark" className="size-20" /></div>
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.16em] text-[#e07a5f]"><GraduationCap size={16} /> Founder & student developer</div>
+                  <h3 className="mt-3 font-display text-4xl font-semibold tracking-tight">Nick Jizheng Li</h3>
+                  <p className="mt-4 max-w-xl text-sm leading-7 text-stone-600">SAT-Buddy was designed and built to make practice feel more connected, encouraging and useful. The aim is simple: every answer should help a student decide what to do next.</p>
+                  <a href="mailto:nick.jizheng.li@gmail.com" className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#123d3a]/8 px-4 py-2 text-sm font-bold text-[#123d3a] transition-colors hover:bg-[#123d3a]/14"><Mail size={16} /> nick.jizheng.li@gmail.com</a>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </section>
+
         <section className="px-5 py-24 sm:px-8 lg:py-32"><Card className="mx-auto max-w-[1280px] overflow-hidden bg-[#e96b4d] p-8 text-white sm:p-14"><div className="grid items-end gap-8 lg:grid-cols-[1fr_auto]"><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-white/60">Ready when you are</p><h2 className="mt-4 max-w-3xl font-display text-5xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Turn the next question into useful progress.</h2><p className="mt-6 max-w-xl text-white/70">Create an account to save attempts, synchronize practice modes and build your personal SAT study library.</p></div><div className="flex flex-wrap gap-3"><Button size="lg" className="bg-[#173c39] hover:bg-[#24534f]" onClick={() => navigate('/auth?mode=register')}>Create my account <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=login')}>Log in</Button></div></div></Card></section>
       </main>
 
-      <footer className="border-t border-stone-900/10 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-4 text-xs text-stone-500 sm:flex-row"><span className="font-bold text-stone-700">PeakSAT Study Studio</span><span>Practice · Understand · Improve</span></div></footer>
+      <footer className="border-t border-stone-900/10 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-4 text-xs text-stone-500 sm:flex-row"><span className="font-bold text-stone-700">SAT-Buddy · By students, for students.</span><a href="mailto:nick.jizheng.li@gmail.com" className="hover:text-[#123d3a]">Nick Jizheng Li · nick.jizheng.li@gmail.com</a></div></footer>
     </div>
   );
 }

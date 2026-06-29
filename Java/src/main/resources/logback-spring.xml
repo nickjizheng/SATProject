@@ -69,8 +69,8 @@
         <appender-ref ref="EMAIL_FILE"/>
     </logger>
     
-    <!-- MyBatis SQL日志 -->
-    <logger name="com.sts.sale.mapper" level="DEBUG" additivity="false">
+    <!-- Keep SQL parameters, including verification codes, out of production logs. -->
+    <logger name="com.sts.sale.mapper" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </logger>

@@ -235,7 +235,7 @@ public class UserService {
             .toLowerCase();
 
         if (base.length() < 3) {
-            base = "peaksat_user";
+            base = "satbuddy_user";
         }
         base = base.substring(0, Math.min(base.length(), 40));
 

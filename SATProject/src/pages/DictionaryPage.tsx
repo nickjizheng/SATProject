@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Card, Input, Button, Typography, Space, message, Spin, Alert } from 'antd';
-import { SearchOutlined, BookOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, Input, Button, Typography, Space, message, Spin, Alert, Tag } from 'antd';
+import { SearchOutlined, BookOutlined, HeartOutlined, HistoryOutlined } from '@ant-design/icons';
 import { DictionaryService } from '../services/dictionaryService';
 import DictionaryResult from '../components/DictionaryResult';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -8,12 +9,29 @@ import type { DictionaryResponse } from '../types/dictionary';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
+const RECENT_SEARCHES_KEY = 'satBuddyRecentDictionarySearches';
 
 const DictionaryPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchWord, setSearchWord] = useState('');
   const [results, setResults] = useState<DictionaryResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      setRecentSearches(JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]'));
+    } catch {
+      setRecentSearches([]);
+    }
+  }, []);
+
+  const rememberSearch = (word: string) => {
+    const updated = [word, ...recentSearches.filter(item => item.toLowerCase() !== word.toLowerCase())].slice(0, 5);
+    setRecentSearches(updated);
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+  };
 
   const handleSearch = async (word: string) => {
     const normalizedWord = word.trim();
@@ -38,6 +56,7 @@ const DictionaryPage: React.FC = () => {
       if (data.length === 0) {
         message.info('No definition found for this word');
       } else {
+        rememberSearch(normalizedWord);
         message.success(`Found definition for "${word}"`);
       }
     } catch (error) {
@@ -114,9 +133,28 @@ const DictionaryPage: React.FC = () => {
           </div>
 
           <div style={{ textAlign: 'center' }}>
-            <Text type="secondary" style={{ fontSize: '16px' }}>
-              Try searching for words like: <Text code>voluminous</Text>, <Text code>serendipity</Text>, <Text code>ubiquitous</Text>
-            </Text>
+            {recentSearches.length > 0 ? (
+              <Space wrap style={{ justifyContent: 'center' }}>
+                <Text type="secondary"><HistoryOutlined /> Recent:</Text>
+                {recentSearches.map(word => (
+                  <Tag.CheckableTag
+                    key={word}
+                    checked={false}
+                    onChange={() => {
+                      setSearchWord(word);
+                      void handleSearch(word);
+                    }}
+                  >
+                    {word}
+                  </Tag.CheckableTag>
+                ))}
+              </Space>
+            ) : (
+              <Space wrap style={{ justifyContent: 'center' }}>
+                <Text type="secondary">Search words you meet in practice, then save the useful ones for review.</Text>
+                <Button type="link" icon={<HeartOutlined />} onClick={() => navigate('/favorite-words')}>Open saved words</Button>
+              </Space>
+            )}
           </div>
         </Space>
       </Card>

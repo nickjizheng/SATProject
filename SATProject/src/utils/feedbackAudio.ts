@@ -1,3 +1,5 @@
+import { getUserPreferences } from './userPreferences';
+
 type WebkitAudioWindow = Window & typeof globalThis & {
   webkitAudioContext?: typeof AudioContext;
 };
@@ -12,6 +14,7 @@ const getFeedbackContext = () => {
 };
 
 export const prepareFeedbackAudio = () => {
+  if (!getUserPreferences().soundEffects) return;
   try {
     const context = getFeedbackContext();
     if (context?.state === 'suspended') void context.resume();
@@ -21,6 +24,7 @@ export const prepareFeedbackAudio = () => {
 };
 
 export const playCorrectAnswerChime = () => {
+  if (!getUserPreferences().soundEffects) return;
   try {
     const context = getFeedbackContext();
     if (!context) return;

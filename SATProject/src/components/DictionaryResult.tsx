@@ -3,23 +3,13 @@ import { Card, Typography, Space, Tag, Divider, List, Button, message } from 'an
 import { SoundOutlined, CalendarOutlined, BookOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons';
 import type { DictionaryResponse } from '../types/dictionary';
 import { FavoriteWordService } from '../services/favoriteWordService';
+import { getPronunciationAudioUrl } from '../utils/dictionaryAudio';
 
 const { Title, Text } = Typography;
 
 interface DictionaryResultProps {
   data: DictionaryResponse[];
 }
-
-const getPronunciationAudioUrl = (audio: string) => {
-  const normalized = audio.toLowerCase();
-  let directory = normalized.charAt(0);
-
-  if (normalized.startsWith('bix')) directory = 'bix';
-  else if (normalized.startsWith('gg')) directory = 'gg';
-  else if (!/^[a-z]/.test(normalized)) directory = 'number';
-
-  return `https://media.merriam-webster.com/audio/prons/en/us/mp3/${directory}/${encodeURIComponent(audio)}.mp3`;
-};
 
 const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
   const [isFavorited, setIsFavorited] = useState(false);

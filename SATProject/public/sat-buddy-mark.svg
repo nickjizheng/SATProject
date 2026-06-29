@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">SAT-Buddy</title>
+  <defs>
+    <linearGradient id="teal" x1="10" y1="8" x2="55" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#174d48"/>
+      <stop offset="1" stop-color="#0e3532"/>
+    </linearGradient>
+    <linearGradient id="page" x1="15" y1="29" x2="49" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fffdf7"/>
+      <stop offset="1" stop-color="#e8d6ad"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 5.5c16.2 0 27.5 9.6 27.5 24.2 0 13.2-9.3 22.3-23.2 24l-8.8 6.1.7-6.6C13.8 51.8 4.5 42.6 4.5 29.7 4.5 15.1 15.8 5.5 32 5.5Z" fill="url(#teal)"/>
+  <path d="M14.5 29.5c7.1-.8 12.8.4 17.5 4.1 4.7-3.7 10.4-4.9 17.5-4.1v16.3c-7.3-.8-13.1.8-17.5 5-4.4-4.2-10.2-5.8-17.5-5V29.5Z" fill="url(#page)"/>
+  <path d="M32 33.6v17.2" fill="none" stroke="#d6bf8c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="m20.2 24.5 7.1 4.4c3.2-7.5 8.6-13 16.7-16.6" fill="none" stroke="#e07a5f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

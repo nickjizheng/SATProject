@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Typography, Space, Button, List, Tag, message, Spin, Empty } from 'antd';
 import { HeartFilled, SoundOutlined, CalendarOutlined, DeleteOutlined } from '@ant-design/icons';
 import { FavoriteWordService, type FavoriteWordResponse } from '../services/favoriteWordService';
+import { DictionaryService } from '../services/dictionaryService';
+import { findPronunciationAudio, getPronunciationAudioUrl, parseSavedDictionaryEntry } from '../utils/dictionaryAudio';
 
 const { Title, Text } = Typography;
 
@@ -9,10 +11,46 @@ const FavoriteWordsPage: React.FC = () => {
   const [favoriteWords, setFavoriteWords] = useState<FavoriteWordResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [playingId, setPlayingId] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     loadFavoriteWords();
+    return () => audioRef.current?.pause();
   }, []);
+
+  const handlePlayPronunciation = async (item: FavoriteWordResponse) => {
+    audioRef.current?.pause();
+    setPlayingId(item.id);
+
+    try {
+      let audioName = findPronunciationAudio(parseSavedDictionaryEntry(item.wordData));
+      if (!audioName) {
+        const liveEntries = await DictionaryService.getWordDefinition(item.word);
+        audioName = findPronunciationAudio(liveEntries);
+      }
+
+      if (!audioName) {
+        message.warning(`No pronunciation recording is available for “${item.word}”.`);
+        return;
+      }
+
+      const audio = new Audio(getPronunciationAudioUrl(audioName));
+      audioRef.current = audio;
+      const finish = () => {
+        setPlayingId(null);
+        if (audioRef.current === audio) audioRef.current = null;
+      };
+      audio.addEventListener('ended', finish, { once: true });
+      audio.addEventListener('error', finish, { once: true });
+      await audio.play();
+    } catch (error) {
+      console.error('Failed to play saved-word pronunciation:', error);
+      message.error('Pronunciation audio could not be played.');
+    } finally {
+      if (!audioRef.current || audioRef.current.paused) setPlayingId(null);
+    }
+  };
 
   const loadFavoriteWords = async () => {
     setLoading(true);
@@ -100,19 +138,21 @@ const FavoriteWordsPage: React.FC = () => {
                             {item.partOfSpeech}
                           </Tag>
                         )}
-                        {item.pronunciation && (
-                          <Space size="small" style={{
+                        <Button
+                          size="small"
+                          icon={<SoundOutlined />}
+                          loading={playingId === item.id}
+                          onClick={() => void handlePlayPronunciation(item)}
+                          title={`Play pronunciation for ${item.word}`}
+                          style={{
                             background: '#fafafa',
-                            padding: '4px 8px',
                             borderRadius: '4px',
                             border: '1px solid #e8e8e8'
                           }}>
-                            <SoundOutlined style={{ color: '#52c41a', fontSize: '12px' }} />
-                            <Text code style={{ fontSize: '12px', overflowWrap: 'anywhere' }}>
-                              {item.pronunciation}
-                            </Text>
-                          </Space>
-                        )}
+                          <Text code style={{ fontSize: '12px', overflowWrap: 'anywhere' }}>
+                            {item.pronunciation || 'Play pronunciation'}
+                          </Text>
+                        </Button>
                       </Space>
                     </div>
 

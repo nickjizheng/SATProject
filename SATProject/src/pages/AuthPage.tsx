@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { BookOpenCheck, CheckCircle2, Compass, Sparkles } from 'lucide-react';
+import { CheckCircle2, Sparkles } from 'lucide-react';
 import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
+import Brand from '../components/Brand';
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
@@ -24,8 +25,7 @@ export default function AuthPage() {
       <div className="relative mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1440px] items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">
         <motion.section initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="hidden px-8 text-white lg:block xl:px-16">
           <div className="flex items-center gap-3">
-            <span className="grid size-12 place-items-center rounded-2xl bg-[#f4d8cc] text-[#a83f2b]"><BookOpenCheck size={24} /></span>
-            <div><p className="font-display text-3xl font-medium leading-none">PeakSAT</p><p className="mt-1 text-[10px] font-bold uppercase tracking-[.22em] text-teal-50/45">Study studio</p></div>
+            <Brand inverse />
           </div>
           <div className="mt-24 max-w-xl">
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-[#f1b49f]"><Sparkles size={14} /> Built for focused progress</p>
@@ -41,7 +41,7 @@ export default function AuthPage() {
 
         <motion.section key={isLogin ? 'login' : 'register'} initial={{ opacity: 0, y: 18, scale: .985 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: .38 }} className="flex items-center justify-center">
           <div className="w-full max-w-[540px]">
-            <div className="mb-6 flex items-center justify-center gap-2 text-white lg:hidden"><Compass size={22} className="text-[#f1b49f]" /><span className="font-display text-3xl">PeakSAT</span></div>
+            <div className="mb-6 flex justify-center lg:hidden"><Brand inverse /></div>
             {isLogin ? (
               <LoginForm onSuccess={() => navigate('/home')} onSwitchToRegister={() => setMode(false)} />
             ) : (

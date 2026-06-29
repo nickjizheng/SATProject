@@ -54,12 +54,12 @@ function App() {
       locale={enUS}
       theme={{
         token: {
-          colorPrimary: '#0f766e',
-          colorInfo: '#0f766e',
+          colorPrimary: '#123d3a',
+          colorInfo: '#123d3a',
           colorSuccess: '#2f855a',
           colorWarning: '#d97706',
-          colorError: '#dc5d45',
-          colorText: '#1f2927',
+          colorError: '#e07a5f',
+          colorText: '#2a2a2a',
           colorTextSecondary: '#6f7976',
           colorBgContainer: '#fffdf8',
           borderRadius: 12,

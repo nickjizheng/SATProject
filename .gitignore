@@ -4,6 +4,7 @@ Java/logs/
 Java/target/
 .run/
 .run-frontend*.log
+.env.local
 PeakSAT-answer-key-pipeline.zip
 answer-key-pipeline/
 SATProject/redesign-*.png

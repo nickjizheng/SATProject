@@ -140,7 +140,7 @@ public class AuthController {
     }
 
     /**
-     * Exchange a verified Google ID token for the normal PeakSAT JWT session.
+     * Exchange a verified Google ID token for the normal SAT-Buddy JWT session.
      */
     @PostMapping(value = "/google", produces = "application/json")
     public ApiResponse<AuthResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {

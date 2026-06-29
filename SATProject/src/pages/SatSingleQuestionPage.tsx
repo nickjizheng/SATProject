@@ -4,7 +4,7 @@ import { ReloadOutlined, RightOutlined, TrophyOutlined, ClockCircleOutlined, Che
 import type { SatQuestion, AnswerResponse, NextQuestionResponse } from '../types/sat';
 import { SatService } from '../services/satService';
 import SatQuestionCard from '../components/SatQuestionCard';
-import { getDomainOptions } from '../utils/domainMapping';
+import { getDomainDisplayName } from '../utils/domainMapping';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -15,6 +15,7 @@ const SatSingleQuestionPage: React.FC = () => {
   const [answerResult, setAnswerResult] = useState<AnswerResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
+  const [domains, setDomains] = useState<string[]>([]);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [questionStats, setQuestionStats] = useState({
     answeredCount: 0,
@@ -43,8 +44,18 @@ const SatSingleQuestionPage: React.FC = () => {
   }, [sessionId, selectedDomain]);
 
   useEffect(() => {
+    loadDomains();
     loadAnswerSummary();
   }, []);
+
+  const loadDomains = async () => {
+    try {
+      setDomains(await SatService.getAllDomains());
+    } catch (error) {
+      console.error('Failed to load domains:', error);
+      message.error('Failed to load available domains.');
+    }
+  };
 
   const loadAnswerSummary = async () => {
     try {
@@ -199,8 +210,8 @@ const SatSingleQuestionPage: React.FC = () => {
                   onChange={setSelectedDomain}
                   allowClear
                 >
-                  {getDomainOptions().map(option => (
-                    <Option key={option.value} value={option.value}>{option.label}</Option>
+                  {domains.map(domain => (
+                    <Option key={domain} value={domain}>{getDomainDisplayName(domain)}</Option>
                   ))}
                 </Select>
               </div>

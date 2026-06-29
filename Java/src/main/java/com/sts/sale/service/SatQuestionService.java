@@ -68,9 +68,7 @@ public class SatQuestionService {
      * @return 领域列表
      */
     public List<String> getAllDomains() {
-        List<String> domains = satQuestionMapper.getAllDomains();
-        System.out.println("从数据库获取到的领域: " + domains);
-        return domains;
+        return satQuestionMapper.getAllDomains();
     }
 
     /**

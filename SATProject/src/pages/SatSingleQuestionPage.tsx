@@ -22,16 +22,18 @@ const SatSingleQuestionPage: React.FC = () => {
     hasMoreQuestions: true
   });
   const [showAnswer, setShowAnswer] = useState(false);
-  const [sessionStats, setSessionStats] = useState({
+  const [answerSummary, setAnswerSummary] = useState({
+    answeredQuestions: 0,
     correctAnswers: 0,
-    totalAnswered: 0,
-    startTime: Date.now()
+    accuracy: 0,
   });
 
   // Initialize session
   useEffect(() => {
-    initializeSession();
-  }, []);
+    if (!sessionId) {
+      initializeSession();
+    }
+  }, [sessionId]);
 
   // Reload questions when domain changes
   useEffect(() => {
@@ -40,33 +42,46 @@ const SatSingleQuestionPage: React.FC = () => {
     }
   }, [sessionId, selectedDomain]);
 
+  useEffect(() => {
+    loadAnswerSummary();
+  }, []);
+
+  const loadAnswerSummary = async () => {
+    try {
+      const summary = await SatService.getAnswerSummary();
+      setAnswerSummary(summary);
+    } catch (error) {
+      console.error('Failed to load SAT answer summary:', error);
+    }
+  };
+
   const initializeSession = async () => {
     try {
       const newSessionId = await SatService.generateSession();
       setSessionId(newSessionId);
-      console.log('创建新会话:', newSessionId);
+      console.log('Created new session:', newSessionId);
     } catch (error) {
-      console.error('创建会话失败:', error);
-      message.error('创建会话失败');
+      console.error('Failed to create session:', error);
+      message.error('Failed to create a session.');
     }
   };
 
   const loadNextQuestion = async () => {
     if (!sessionId) return;
-    
+
     setLoading(true);
     setSelectedAnswer('');
     setAnswerResult(null);
     setShowAnswer(false);
-    
+
     try {
       const response: NextQuestionResponse = await SatService.getNextQuestion({
         sessionId,
         domain: selectedDomain || undefined
       });
-      
+
       console.log('Get next question response:', response);
-      
+
       if (response.question) {
         setCurrentQuestion(response.question);
         setQuestionStats({
@@ -81,11 +96,11 @@ const SatSingleQuestionPage: React.FC = () => {
           totalCount: response.totalCount,
           hasMoreQuestions: false
         });
-        message.info('恭喜！您已经完成了所有题目');
+        message.info('No more questions with verified answer keys are available.');
       }
     } catch (error) {
-      console.error('加载题目失败:', error);
-      message.error('加载题目失败: ' + (error as Error).message);
+      console.error('Failed to load question:', error);
+      message.error('Failed to load the next question: ' + (error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -99,7 +114,7 @@ const SatSingleQuestionPage: React.FC = () => {
 
   const handleSubmitAnswer = async () => {
     if (!selectedAnswer || !currentQuestion) {
-      message.warning('请选择一个答案');
+      message.warning('Please choose an answer.');
       return;
     }
 
@@ -109,26 +124,19 @@ const SatSingleQuestionPage: React.FC = () => {
         answer: selectedAnswer,
         sessionId: sessionId
       });
-      
+
       setAnswerResult(result);
       setShowAnswer(true);
-      
-      // 更新统计信息
       setQuestionStats(prev => ({
         ...prev,
         answeredCount: prev.answeredCount + 1
       }));
+      await loadAnswerSummary();
 
-      setSessionStats(prev => ({
-        ...prev,
-        totalAnswered: prev.totalAnswered + 1,
-        correctAnswers: result.isCorrect ? prev.correctAnswers + 1 : prev.correctAnswers
-      }));
-      
-      message.success(result.isCorrect ? '回答正确！' : '回答错误，继续努力！');
+      message.success(result.isCorrect ? 'Correct answer!' : 'Incorrect answer. Keep going.');
     } catch (error) {
       console.error('Failed to submit answer:', error);
-      message.error('提交答案失败: ' + (error as Error).message);
+      message.error('Failed to submit your answer: ' + (error as Error).message);
     }
   };
 
@@ -141,24 +149,24 @@ const SatSingleQuestionPage: React.FC = () => {
   };
 
   const handleRestart = () => {
-    setSessionStats({
-      correctAnswers: 0,
-      totalAnswered: 0,
-      startTime: Date.now()
+    setQuestionStats({
+      answeredCount: 0,
+      totalCount: 0,
+      hasMoreQuestions: true
     });
-    initializeSession();
+    setCurrentQuestion(null);
+    setSelectedAnswer('');
+    setAnswerResult(null);
+    setShowAnswer(false);
+    setSessionId('');
   };
 
-  const progressPercent = questionStats.totalCount > 0 
+  const progressPercent = questionStats.totalCount > 0
     ? Math.round((questionStats.answeredCount / questionStats.totalCount) * 100)
     : 0;
 
-  const accuracyPercent = sessionStats.totalAnswered > 0 
-    ? Math.round((sessionStats.correctAnswers / sessionStats.totalAnswered) * 100)
-    : 0;
-
   return (
-    <div style={{ 
+    <div style={{
       minHeight: '100vh',
       background: '#f5f5f5',
       padding: '24px'
@@ -166,15 +174,15 @@ const SatSingleQuestionPage: React.FC = () => {
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* 页面标题 */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>SAT 单题模式</Title>
+          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>SAT Single Question Mode</Title>
           <Text type="secondary" style={{ fontSize: '16px' }}>
-            逐题练习，记录学习进度
+            Practice one question at a time and track your progress.
           </Text>
         </div>
 
         {/* 控制面板 */}
-        <Card 
-          style={{ 
+        <Card
+          style={{
             marginBottom: '24px',
             borderRadius: '12px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
@@ -183,10 +191,10 @@ const SatSingleQuestionPage: React.FC = () => {
           <Row gutter={[24, 16]} align="middle">
             <Col xs={24} sm={12} md={8}>
               <div>
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>选择科目</Text>
+                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Domain</Text>
                 <Select
                   style={{ width: '100%' }}
-                  placeholder="全部科目"
+                  placeholder="All domains"
                   value={selectedDomain}
                   onChange={setSelectedDomain}
                   allowClear
@@ -198,29 +206,29 @@ const SatSingleQuestionPage: React.FC = () => {
               </div>
             </Col>
             <Col xs={24} sm={12} md={8}>
-              <Button 
-                type="primary" 
-                icon={<ReloadOutlined />} 
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
                 onClick={handleRestart}
                 size="large"
                 style={{ width: '100%', marginTop: '28px', height: '32px', fontSize: '16px', borderRadius: '8px' }}
               >
-                重新开始
+                Restart Session
               </Button>
             </Col>
             <Col xs={24} sm={24} md={8}>
               <div style={{ textAlign: 'right' }}>
                 <Space>
                   <Statistic
-                    title="正确率"
-                    value={accuracyPercent}
+                    title="Accuracy"
+                    value={answerSummary.accuracy}
                     suffix="%"
-                    valueStyle={{ color: accuracyPercent >= 80 ? '#52c41a' : accuracyPercent >= 60 ? '#faad14' : '#ff4d4f' }}
+                    valueStyle={{ color: answerSummary.accuracy >= 80 ? '#52c41a' : answerSummary.accuracy >= 60 ? '#faad14' : '#ff4d4f' }}
                     prefix={<TrophyOutlined />}
                   />
                   <Statistic
-                    title="已答题"
-                    value={sessionStats.totalAnswered}
+                    title="Answered"
+                    value={answerSummary.answeredQuestions}
                     valueStyle={{ color: '#1890ff' }}
                   />
                 </Space>
@@ -230,8 +238,8 @@ const SatSingleQuestionPage: React.FC = () => {
         </Card>
 
         {/* 进度显示 */}
-        <Card 
-          style={{ 
+        <Card
+          style={{
             marginBottom: '24px',
             borderRadius: '12px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
@@ -241,10 +249,10 @@ const SatSingleQuestionPage: React.FC = () => {
             <Col xs={24} sm={12} md={8}>
               <div style={{ textAlign: 'center' }}>
                 <Text strong style={{ fontSize: '18px' }}>
-                  已答题 {questionStats.answeredCount} / 总计 {questionStats.totalCount}
+                  Answered {questionStats.answeredCount} / {questionStats.totalCount}
                 </Text>
-                <Progress 
-                  percent={progressPercent} 
+                <Progress
+                  percent={progressPercent}
                   status={questionStats.hasMoreQuestions ? 'active' : 'success'}
                   strokeColor={{
                     '0%': '#108ee9',
@@ -258,14 +266,14 @@ const SatSingleQuestionPage: React.FC = () => {
               <div style={{ textAlign: 'center' }}>
                 <Space>
                   <Statistic
-                    title="正确题数"
-                    value={sessionStats.correctAnswers}
+                    title="Correct"
+                    value={answerSummary.correctAnswers}
                     valueStyle={{ color: '#52c41a' }}
                     prefix={<CheckCircleOutlined />}
                   />
                   <Statistic
-                    title="错误题数"
-                    value={sessionStats.totalAnswered - sessionStats.correctAnswers}
+                    title="Incorrect"
+                    value={Math.max(answerSummary.answeredQuestions - answerSummary.correctAnswers, 0)}
                     valueStyle={{ color: '#ff4d4f' }}
                     prefix={<ClockCircleOutlined />}
                   />
@@ -275,8 +283,8 @@ const SatSingleQuestionPage: React.FC = () => {
             <Col xs={24} sm={24} md={8}>
               {!questionStats.hasMoreQuestions && (
                 <Alert
-                  message="恭喜完成！"
-                  description="您已完成所有题目，可以重新开始或选择其他科目。"
+                  message="All done!"
+                  description="You have completed all available questions. Restart or choose another domain to continue."
                   type="success"
                   showIcon
                 />
@@ -289,12 +297,12 @@ const SatSingleQuestionPage: React.FC = () => {
         {loading ? (
           <Card style={{ textAlign: 'center', padding: '60px', borderRadius: '12px' }}>
             <Spin size="large" />
-            <div style={{ marginTop: '16px', fontSize: '16px' }}>正在加载题目...</div>
+            <div style={{ marginTop: '16px', fontSize: '16px' }}>Loading question...</div>
           </Card>
         ) : currentQuestion ? (
           <>
-            <Card 
-              style={{ 
+            <Card
+              style={{
                 marginBottom: '24px',
                 borderRadius: '12px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -313,21 +321,21 @@ const SatSingleQuestionPage: React.FC = () => {
 
             {/* 下一题按钮 */}
             {showAnswer && questionStats.hasMoreQuestions && (
-              <Card 
-                style={{ 
+              <Card
+                style={{
                   borderRadius: '12px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                 }}
               >
                 <div style={{ textAlign: 'center' }}>
-                  <Button 
-                    type="primary" 
+                  <Button
+                    type="primary"
                     size="large"
                     icon={<RightOutlined />}
                     onClick={handleNextQuestion}
                     style={{ minWidth: '160px', height: '48px', fontSize: '16px' }}
                   >
-                    下一题
+                    Next Question
                   </Button>
                 </div>
               </Card>
@@ -335,7 +343,7 @@ const SatSingleQuestionPage: React.FC = () => {
           </>
         ) : (
           <Card style={{ textAlign: 'center', padding: '60px', borderRadius: '12px' }}>
-            <Text type="secondary" style={{ fontSize: '16px' }}>暂无题目数据</Text>
+            <Text type="secondary" style={{ fontSize: '16px' }}>No question data available.</Text>
           </Card>
         )}
       </div>

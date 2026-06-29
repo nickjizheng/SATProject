@@ -1,87 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Layout } from 'antd';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { BookOpenCheck, CheckCircle2, Compass, Sparkles } from 'lucide-react';
 import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
 
-const { Content } = Layout;
-
-const AuthPage: React.FC = () => {
+export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
 
-  useEffect(() => {
-    const mode = searchParams.get('mode');
-    if (mode === 'register') {
-      setIsLogin(false);
-    } else if (mode === 'login') {
-      setIsLogin(true);
-    }
-  }, [searchParams]);
+  useEffect(() => setIsLogin(searchParams.get('mode') !== 'register'), [searchParams]);
 
-  const handleAuthSuccess = (data: any) => {
-    console.log('认证成功:', data);
-    // 认证成功后跳转到首页
-    navigate('/home');
-  };
-
-  const switchToRegister = () => {
-    setIsLogin(false);
-    navigate('/auth?mode=register');
-  };
-
-  const switchToLogin = () => {
-    setIsLogin(true);
-    navigate('/auth?mode=login');
+  const setMode = (login: boolean) => {
+    setIsLogin(login);
+    navigate(`/auth?mode=${login ? 'login' : 'register'}`);
   };
 
   return (
-    <Layout style={{ 
-      height: 'calc(100vh - 80px)', 
-      width: '100vw',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* 背景装饰 */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: `
-          radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-          radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.2) 0%, transparent 50%)
-        `,
-        pointerEvents: 'none'
-      }} />
-      
-      <Content style={{
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '40px 24px'
-      }}>
-        <div className="animate-fade-in-up">
-          {isLogin ? (
-            <LoginForm 
-              onSuccess={handleAuthSuccess} 
-              onSwitchToRegister={switchToRegister}
-            />
-          ) : (
-            <RegisterForm 
-              onSuccess={handleAuthSuccess} 
-              onSwitchToLogin={switchToLogin}
-            />
-          )}
-        </div>
-      </Content>
-    </Layout>
-  );
-};
+    <div className="auth-canvas relative min-h-screen overflow-hidden bg-[#173c39] px-5 py-6 sm:px-8">
+      <div className="absolute -left-40 -top-40 size-[34rem] rounded-full border-[5rem] border-white/[.035]" />
+      <div className="absolute -bottom-52 right-[-8rem] size-[38rem] rounded-full bg-[#e96b4d]/15 blur-3xl" />
+      <div className="relative mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1440px] items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">
+        <motion.section initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="hidden px-8 text-white lg:block xl:px-16">
+          <div className="flex items-center gap-3">
+            <span className="grid size-12 place-items-center rounded-2xl bg-[#f4d8cc] text-[#a83f2b]"><BookOpenCheck size={24} /></span>
+            <div><p className="font-display text-3xl font-medium leading-none">PeakSAT</p><p className="mt-1 text-[10px] font-bold uppercase tracking-[.22em] text-teal-50/45">Study studio</p></div>
+          </div>
+          <div className="mt-24 max-w-xl">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-[#f1b49f]"><Sparkles size={14} /> Built for focused progress</p>
+            <h1 className="mt-5 font-display text-6xl font-medium leading-[.98] tracking-[-.045em]">Your preparation,<br /><em className="font-light text-[#f1b49f]">finally in focus.</em></h1>
+            <p className="mt-7 max-w-lg text-base leading-7 text-teal-50/60">Move from practice to insight without losing your place. Every answer, saved word and domain score stays connected.</p>
+            <div className="mt-10 space-y-4">
+              {['Synced practice across both question modes', 'Account-specific progress and saved items', 'Clear feedback after every submitted answer'].map(item => (
+                <p key={item} className="flex items-center gap-3 text-sm font-semibold text-teal-50/78"><CheckCircle2 className="text-[#f1b49f]" size={18} />{item}</p>
+              ))}
+            </div>
+          </div>
+        </motion.section>
 
-export default AuthPage;
+        <motion.section key={isLogin ? 'login' : 'register'} initial={{ opacity: 0, y: 18, scale: .985 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: .38 }} className="flex items-center justify-center">
+          <div className="w-full max-w-[540px]">
+            <div className="mb-6 flex items-center justify-center gap-2 text-white lg:hidden"><Compass size={22} className="text-[#f1b49f]" /><span className="font-display text-3xl">PeakSAT</span></div>
+            {isLogin ? (
+              <LoginForm onSuccess={() => navigate('/home')} onSwitchToRegister={() => setMode(false)} />
+            ) : (
+              <RegisterForm onSuccess={() => navigate('/home')} onSwitchToLogin={() => setMode(true)} />
+            )}
+          </div>
+        </motion.section>
+      </div>
+    </div>
+  );
+}

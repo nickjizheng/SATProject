@@ -1,303 +1,137 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Typography, Avatar, Dropdown, Button } from 'antd';
-import { 
-  LoginOutlined, 
-  UserAddOutlined, 
-  BookOutlined, 
-  LogoutOutlined, 
-  UserOutlined, 
-  SearchOutlined, 
-  HeartOutlined, 
-  StarOutlined,
-  HomeOutlined,
-  DashboardOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined
-} from '@ant-design/icons';
-
-const { Sider } = Layout;
-const { Title, Text } = Typography;
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import {
+  BookOpenText,
+  ChartNoAxesCombined,
+  ChevronLeft,
+  ChevronRight,
+  CircleUserRound,
+  Heart,
+  Home,
+  LibraryBig,
+  LogOut,
+  Search,
+  Sparkles,
+  Star,
+} from 'lucide-react';
+import { cn } from '../lib/utils';
 
 interface NavigationProps {
   collapsed: boolean;
   onCollapse: (collapsed: boolean) => void;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ collapsed, onCollapse }) => {
+const navItems = [
+  { path: '/home', label: 'Home', icon: Home },
+  { path: '/dashboard', label: 'Dashboard', icon: ChartNoAxesCombined },
+  { path: '/sat-practice', label: 'Practice', icon: BookOpenText },
+  { path: '/sat-single', label: 'Quick question', icon: Sparkles },
+  { path: '/dictionary', label: 'Dictionary', icon: Search },
+  { path: '/favorite-words', label: 'Saved words', icon: Heart },
+  { path: '/favorite-questions', label: 'Saved questions', icon: Star },
+];
+
+export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<{ username?: string; email?: string } | null>(null);
 
-  // 检查登录状态
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    
-    if (token && userStr) {
-      setIsLoggedIn(true);
-      try {
-        setUserInfo(JSON.parse(userStr));
-      } catch (error) {
-        console.error('用户信息解析失败:', error);
-        // 清除无效的用户信息
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('refreshToken');
-        setIsLoggedIn(false);
-      }
-    } else {
-      setIsLoggedIn(false);
+    const user = localStorage.getItem('user');
+    try {
+      setUserInfo(user ? JSON.parse(user) : null);
+    } catch {
+      setUserInfo(null);
     }
-  }, [location.pathname]); // 当路由变化时重新检查登录状态
+  }, [location.pathname]);
 
-  const handleLogoClick = () => {
-    if (isLoggedIn) {
-      navigate('/home');
-    } else {
-      navigate('/auth?mode=login');
-    }
-  };
-
-  const handleLoginClick = () => {
-    navigate('/auth?mode=login');
-  };
-
-  const handleRegisterClick = () => {
-    navigate('/auth?mode=register');
-  };
-
-  const handleSatPracticeClick = () => {
-    navigate('/sat-practice');
-  };
-
-  const handleSatSingleClick = () => {
-    navigate('/sat-single');
-  };
-
-  const handleDictionaryClick = () => {
-    navigate('/dictionary');
-  };
-
-  const handleFavoriteWordsClick = () => {
-    navigate('/favorite-words');
-  };
-
-  const handleFavoriteQuestionsClick = () => {
-    navigate('/favorite-questions');
-  };
-
-  const handleLogout = () => {
+  const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('refreshToken');
-    setIsLoggedIn(false);
-    setUserInfo(null);
     navigate('/auth?mode=login');
   };
 
-  // 在认证页面不显示导航
-  if (location.pathname === '/auth') {
-    return null;
-  }
-
-  // 菜单项配置
-  const getMenuItems = () => {
-    if (!isLoggedIn) {
-      return [
-        {
-          key: '/auth?mode=login',
-          icon: <LoginOutlined />,
-          label: '登录',
-          onClick: handleLoginClick
-        },
-        {
-          key: '/auth?mode=register',
-          icon: <UserAddOutlined />,
-          label: '注册',
-          onClick: handleRegisterClick
-        }
-      ];
-    }
-
-    return [
-      {
-        key: '/home',
-        icon: <HomeOutlined />,
-        label: '首页',
-        onClick: () => navigate('/home')
-      },
-      {
-        key: '/dashboard',
-        icon: <DashboardOutlined />,
-        label: '仪表板',
-        onClick: () => navigate('/dashboard')
-      },
-      {
-        key: '/sat-practice',
-        icon: <BookOutlined />,
-        label: 'SAT 练习',
-        onClick: handleSatPracticeClick
-      },
-      {
-        key: '/sat-single',
-        icon: <BookOutlined />,
-        label: '单题模式',
-        onClick: handleSatSingleClick
-      },
-      {
-        key: '/dictionary',
-        icon: <SearchOutlined />,
-        label: '词典',
-        onClick: handleDictionaryClick
-      },
-      {
-        key: '/favorite-words',
-        icon: <HeartOutlined />,
-        label: '收藏单词',
-        onClick: handleFavoriteWordsClick
-      },
-      {
-        key: '/favorite-questions',
-        icon: <StarOutlined />,
-        label: '收藏题目',
-        onClick: handleFavoriteQuestionsClick
-      }
-    ];
-  };
-
-  // 用户菜单
-  const userMenu = (
-    <Menu>
-      <Menu.Item key="profile" icon={<UserOutlined />}>
-        个人资料
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
-        退出登录
-      </Menu.Item>
-    </Menu>
-  );
-
   return (
-    <Sider
-      trigger={null}
-      collapsible
-      collapsed={collapsed}
-      style={{
-        background: '#fff',
-        boxShadow: '2px 0 8px rgba(0, 0, 0, 0.06)',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        zIndex: 1000,
-        height: '100vh'
-      }}
+    <>
+    <motion.aside
+      initial={false}
+      animate={{ width: collapsed ? 88 : 272 }}
+      transition={{ type: 'spring', stiffness: 310, damping: 30 }}
+      className="fixed inset-y-0 left-0 z-50 hidden border-r border-stone-900/10 bg-[#173c39] text-white shadow-[18px_0_60px_rgba(26,48,45,.12)] md:flex md:flex-col"
     >
-      {/* Logo 区域 */}
-      <div style={{
-        height: '64px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderBottom: '1px solid #f0f0f0',
-        padding: '0 16px'
-      }}>
-        {collapsed ? (
-          <Title 
-            level={4} 
-            style={{ 
-              margin: 0, 
-              color: '#1890ff',
-              cursor: 'pointer'
-            }}
-            onClick={handleLogoClick}
-          >
-            SAT
-          </Title>
-        ) : (
-          <Title 
-            level={3} 
-            style={{ 
-              margin: 0, 
-              color: '#1890ff',
-              cursor: 'pointer',
-              fontSize: '1.2rem'
-            }}
-            onClick={handleLogoClick}
-          >
-            SAT Project
-          </Title>
-        )}
-      </div>
+      <button onClick={() => navigate('/home')} className="flex h-24 w-full items-center gap-3 px-6 text-left">
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#f4d8cc] text-[#a83f2b] shadow-inner">
+          <LibraryBig size={22} strokeWidth={2.2} />
+        </span>
+        <AnimatePresence initial={false}>
+          {!collapsed && (
+            <motion.span initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} className="overflow-hidden whitespace-nowrap">
+              <strong className="block font-display text-[1.65rem] font-medium leading-none tracking-tight">PeakSAT</strong>
+              <small className="mt-1 block text-[10px] font-bold uppercase tracking-[.2em] text-teal-100/55">Study studio</small>
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </button>
 
-      {/* 用户信息区域 */}
-      {isLoggedIn && (
-        <div style={{
-          padding: '16px',
-          borderBottom: '1px solid #f0f0f0',
-          textAlign: 'center'
-        }}>
-          <Dropdown overlay={userMenu} placement="topCenter">
-            <div style={{ cursor: 'pointer' }}>
-              <Avatar 
-                size={collapsed ? 32 : 40} 
-                icon={<UserOutlined />}
-                style={{ 
-                  background: '#1890ff',
-                  marginBottom: collapsed ? 0 : 8
-                }}
-              />
-              {!collapsed && (
-                <div>
-                  <Text strong style={{ display: 'block', fontSize: '14px' }}>
-                    {userInfo?.username || 'User'}
-                  </Text>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    {userInfo?.email}
-                  </Text>
-                </div>
+      <nav className="flex-1 space-y-1.5 overflow-y-auto px-3 py-4">
+        {navItems.map(({ path, label, icon: Icon }, index) => {
+          const active = location.pathname === path;
+          return (
+            <motion.button
+              key={path}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.035 }}
+              onClick={() => navigate(path)}
+              title={collapsed ? label : undefined}
+              className={cn(
+                'group relative flex h-12 w-full items-center gap-3 overflow-hidden rounded-2xl px-3 text-sm font-bold transition-colors',
+                active ? 'bg-[#f5f2e9] text-[#173c39]' : 'text-teal-50/68 hover:bg-white/8 hover:text-white',
               )}
+            >
+              {active && <motion.span layoutId="nav-marker" className="absolute left-0 h-6 w-1 rounded-r-full bg-[#e96b4d]" />}
+              <Icon size={20} className="shrink-0" strokeWidth={active ? 2.4 : 1.8} />
+              {!collapsed && <span className="truncate">{label}</span>}
+            </motion.button>
+          );
+        })}
+      </nav>
+
+      <div className="m-3 rounded-[1.4rem] border border-white/10 bg-white/6 p-3">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#f4d8cc]"><CircleUserRound size={21} /></span>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-extrabold">{userInfo?.username || 'Student'}</p>
+              <p className="truncate text-[10px] text-teal-50/45">{userInfo?.email || 'Ready to practise'}</p>
             </div>
-          </Dropdown>
+          )}
+          {!collapsed && <button onClick={logout} title="Log out" className="rounded-lg p-2 text-teal-50/50 hover:bg-white/10 hover:text-white"><LogOut size={17} /></button>}
         </div>
-      )}
-
-      {/* 导航菜单 */}
-      <Menu
-        mode="inline"
-        selectedKeys={[location.pathname]}
-        items={getMenuItems()}
-        style={{
-          border: 'none',
-          background: 'transparent'
-        }}
-      />
-
-      {/* 折叠按钮 */}
-      <div style={{
-        position: 'absolute',
-        bottom: '16px',
-        left: '16px',
-        right: '16px'
-      }}>
-        <Button
-          type="text"
-          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={() => onCollapse(!collapsed)}
-          style={{
-            width: '100%',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        />
       </div>
-    </Sider>
-  );
-};
 
-export default Navigation;
+      <button onClick={() => onCollapse(!collapsed)} className="mx-3 mb-4 flex h-10 items-center justify-center rounded-xl border border-white/10 text-teal-50/55 hover:bg-white/8 hover:text-white">
+        {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+      </button>
+    </motion.aside>
+
+    <nav className="fixed inset-x-3 bottom-3 z-50 flex h-16 items-center gap-1 overflow-x-auto rounded-[1.35rem] border border-white/10 bg-[#173c39]/95 px-2 text-white shadow-[0_18px_55px_rgba(23,60,57,.28)] backdrop-blur-xl md:hidden">
+      {navItems.map(({ path, label, icon: Icon }) => {
+        const active = location.pathname === path;
+        return (
+          <button
+            key={path}
+            onClick={() => navigate(path)}
+            className={cn('flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[9px] font-bold', active ? 'bg-[#f5f2e9] text-[#173c39]' : 'text-white/60')}
+          >
+            <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
+            <span className="whitespace-nowrap">{label.replace(' question', '')}</span>
+          </button>
+        );
+      })}
+    </nav>
+    </>
+  );
+}

@@ -1,68 +1,170 @@
+@import "tailwindcss";
+@import "@fontsource-variable/manrope";
+@import "@fontsource-variable/newsreader";
+
+@theme {
+  --font-sans: "Manrope Variable", sans-serif;
+  --font-display: "Newsreader Variable", serif;
+}
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  font-family: "Manrope Variable", sans-serif;
+  color: #1f2927;
+  background: #f5f2e9;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --ink: #1f2927;
+  --paper: #f5f2e9;
+  --cream: #ebe6d8;
+  --teal: #115e59;
+  --teal-bright: #0f766e;
+  --coral: #e96b4d;
+  --line: rgba(61, 71, 68, 0.14);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+* { box-sizing: border-box; }
+html { min-width: 320px; min-height: 100%; scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x: hidden; background: var(--paper); }
+button, input, textarea, select { font: inherit; }
+#root { min-height: 100vh; }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+::selection { color: white; background: var(--teal-bright); }
+
+.display-type { font-family: "Newsreader Variable", serif; }
+
+.app-shell {
   min-height: 100vh;
+  background:
+    radial-gradient(circle at 84% 8%, rgba(233, 107, 77, 0.14), transparent 26rem),
+    radial-gradient(circle at 18% 96%, rgba(15, 118, 110, 0.13), transparent 28rem),
+    linear-gradient(145deg, #f8f5ed 0%, #f1eee5 100%);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.13'/%3E%3C/svg%3E");
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.app-main {
+  position: relative;
+  min-height: 100vh;
+  margin-left: 272px;
+  transition: margin-left 280ms cubic-bezier(.22, 1, .36, 1);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.app-shell.is-collapsed .app-main { margin-left: 88px; }
+.app-shell.is-auth .app-main { margin-left: 0; }
+.route-stage { position: relative; z-index: 1; min-height: 100vh; }
+.route-stage > div:not(.auth-canvas):not(.marketing-canvas) {
+  width: min(100%, 1440px) !important;
+  min-height: 100vh !important;
+  margin: 0 auto !important;
+  padding: 42px clamp(20px, 4vw, 64px) 72px !important;
+  background: transparent !important;
+}
+
+.page-shell { width: min(100%, 1440px); margin: 0 auto; padding: 42px clamp(20px, 4vw, 64px) 72px; }
+.page-kicker { color: var(--coral); font-size: .72rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+.page-title { margin: 6px 0 4px; font-family: "Newsreader Variable", serif; font-size: clamp(2.35rem, 5vw, 4.8rem); font-weight: 520; letter-spacing: -.045em; line-height: .98; color: var(--ink); }
+.page-subtitle { max-width: 680px; color: #6f7976; font-size: 1rem; line-height: 1.75; }
+
+/* Ant Design behavior, reskinned to the same design language. */
+.app-main .ant-typography { color: var(--ink); }
+.app-main .ant-typography h1,
+.app-main .ant-typography h2,
+.app-main .ant-typography h3,
+.app-main h1.ant-typography,
+.app-main h2.ant-typography,
+.app-main h3.ant-typography {
+  font-family: "Newsreader Variable", serif !important;
+  color: var(--ink) !important;
+  letter-spacing: -.035em !important;
+}
+
+.app-main .ant-card {
+  overflow: hidden;
+  border: 1px solid rgba(70, 81, 77, .13) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, .79) !important;
+  box-shadow: 0 20px 55px rgba(39, 49, 46, .075) !important;
+  backdrop-filter: blur(18px);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease !important;
+}
+.app-main .ant-card-hoverable:hover,
+.app-main .ant-card:hover { transform: translateY(-2px); border-color: rgba(15, 118, 110, .25) !important; box-shadow: 0 26px 65px rgba(39, 49, 46, .11) !important; }
+.app-main .ant-card-head { min-height: 62px; border-bottom-color: var(--line); }
+.app-main .ant-card-head-title { color: var(--ink); font-size: .9rem; font-weight: 800; letter-spacing: .02em; }
+.app-main .metric-card { color: white; }
+.app-main .metric-card.metric-teal { background: linear-gradient(145deg, #173c39, #0f766e) !important; }
+.app-main .metric-card.metric-coral { background: linear-gradient(145deg, #bd4e39, #e96b4d) !important; }
+.app-main .metric-card.metric-ochre { background: linear-gradient(145deg, #9a6923, #d8a44d) !important; }
+.app-main .metric-card.metric-ink { background: linear-gradient(145deg, #293330, #4a5954) !important; }
+.app-main .metric-card:hover { border-color: transparent !important; }
+
+.app-main .ant-btn {
+  min-height: 40px;
+  border-radius: 12px !important;
+  font-weight: 750;
+  box-shadow: none;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease !important;
+}
+.app-main .ant-btn:hover { transform: translateY(-1px); }
+.app-main .ant-btn-primary {
+  border-color: var(--teal) !important;
+  background: var(--teal) !important;
+  box-shadow: 0 10px 24px rgba(17, 94, 89, .2) !important;
+}
+.app-main .ant-btn-primary:hover { border-color: var(--teal-bright) !important; background: var(--teal-bright) !important; }
+.app-main .ant-btn-link { color: var(--teal-bright); }
+
+.app-main .ant-input,
+.app-main .ant-input-affix-wrapper,
+.app-main .ant-input-search-button,
+.app-main .ant-select-selector {
+  border-color: rgba(70, 81, 77, .16) !important;
+  border-radius: 12px !important;
+  background: rgba(255,255,255,.82) !important;
+  box-shadow: none !important;
+}
+.app-main .ant-input-affix-wrapper:focus,
+.app-main .ant-input-affix-wrapper-focused,
+.app-main .ant-select-focused .ant-select-selector { border-color: var(--teal-bright) !important; box-shadow: 0 0 0 4px rgba(15,118,110,.1) !important; }
+.app-main .ant-radio-wrapper { border-radius: 15px !important; transition: border-color 180ms ease, background 180ms ease, transform 180ms ease; }
+.app-main .ant-radio-wrapper:hover { transform: translateX(2px); border-color: rgba(15,118,110,.4) !important; }
+.app-main .ant-radio-checked .ant-radio-inner { border-color: var(--teal-bright); background: var(--teal-bright); }
+.app-main .ant-progress-bg { background: linear-gradient(90deg, var(--teal), #2ba89c) !important; }
+.app-main .ant-tag { border-radius: 999px; padding: 3px 10px; font-weight: 700; }
+.app-main .ant-alert { border-radius: 16px; }
+.app-main .ant-modal-content { border: 1px solid var(--line); border-radius: 24px; background: #fbfaf6; box-shadow: 0 32px 90px rgba(31,41,39,.24); }
+.app-main .ant-empty-description { color: #78817e; }
+
+.auth-canvas .ant-card {
+  border: 1px solid rgba(255,255,255,.72) !important;
+  border-radius: 28px !important;
+  background: rgba(255,255,255,.88) !important;
+  box-shadow: 0 35px 100px rgba(22, 54, 50, .2) !important;
+  backdrop-filter: blur(24px);
+}
+.auth-canvas .ant-btn-primary { border: 0 !important; background: var(--teal) !important; }
+.auth-canvas .ant-input-affix-wrapper { border-radius: 13px !important; border-color: var(--line) !important; background: #fff !important; }
+
+@media (max-width: 900px) {
+  .app-main, .app-shell.is-collapsed .app-main { margin-left: 0; padding-bottom: 76px; }
+  .page-shell { padding: 28px 18px 52px; }
+  .route-stage > div:not(.auth-canvas):not(.marketing-canvas) { padding: 28px 18px 52px !important; }
+}
+
+@media (max-width: 560px) {
+  .auth-form-card { width: min(100%, 440px) !important; }
+  .app-main .ant-card { border-radius: 20px !important; }
+  .app-main .ant-card-body { padding: 18px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }

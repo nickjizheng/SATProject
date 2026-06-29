@@ -17,6 +17,11 @@ interface SendVerificationCodeRequest {
   email: string;
 }
 
+interface GoogleConfig {
+  configured: boolean;
+  clientId: string;
+}
+
 interface AuthResponse {
   token: string;
   refreshToken: string;
@@ -26,7 +31,7 @@ interface AuthResponse {
   emailVerified: boolean;
 }
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   code: number;
   message: string;
   data: T;
@@ -88,6 +93,14 @@ export const authService = {
   // 用户登录
   async login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {
     return api.post('/auth/login', data);
+  },
+
+  async getGoogleConfig(): Promise<ApiResponse<GoogleConfig>> {
+    return api.get('/auth/google/config');
+  },
+
+  async loginWithGoogle(credential: string): Promise<ApiResponse<AuthResponse>> {
+    return api.post('/auth/google', { credential });
   },
 
   // 用户登出

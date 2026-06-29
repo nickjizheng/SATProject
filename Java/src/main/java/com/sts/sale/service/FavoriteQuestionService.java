@@ -16,13 +16,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class FavoriteQuestionService {
-    
+
     @Autowired
     private FavoriteQuestionMapper favoriteQuestionMapper;
-    
+
     @Autowired
     private ObjectMapper objectMapper;
-    
+
     /**
      * 添加收藏题目
      */
@@ -32,19 +32,19 @@ public class FavoriteQuestionService {
         if (existing != null) {
             throw new RuntimeException("题目已经收藏过了");
         }
-        
+
         FavoriteQuestion favoriteQuestion = new FavoriteQuestion();
         favoriteQuestion.setUserId(userId);
         favoriteQuestion.setQuestionId(request.getQuestionId());
         favoriteQuestion.setQuestionData(request.getQuestionData());
         favoriteQuestion.setCreatedAt(LocalDateTime.now());
         favoriteQuestion.setUpdatedAt(LocalDateTime.now());
-        
+
         favoriteQuestionMapper.insert(favoriteQuestion);
-        
+
         return convertToResponse(favoriteQuestion);
     }
-    
+
     /**
      * 获取用户收藏的题目列表
      */
@@ -54,20 +54,20 @@ public class FavoriteQuestionService {
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * 删除收藏的题目
      */
     public void removeFavoriteQuestion(Long userId, Long questionId) {
         QueryWrapper<FavoriteQuestion> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_id", userId).eq("question_id", questionId);
-        
+
         int deleted = favoriteQuestionMapper.delete(queryWrapper);
         if (deleted == 0) {
             throw new RuntimeException("收藏的题目不存在");
         }
     }
-    
+
     /**
      * 检查题目是否已收藏
      */
@@ -75,7 +75,7 @@ public class FavoriteQuestionService {
         FavoriteQuestion favoriteQuestion = favoriteQuestionMapper.findByUserIdAndQuestionId(userId, questionId);
         return favoriteQuestion != null;
     }
-    
+
     /**
      * 转换为响应对象
      */
@@ -85,31 +85,33 @@ public class FavoriteQuestionService {
         response.setQuestionId(favoriteQuestion.getQuestionId());
         response.setQuestionData(favoriteQuestion.getQuestionData());
         response.setCreatedAt(favoriteQuestion.getCreatedAt());
-        
+
         // 从JSON数据中提取信息
         try {
             JsonNode questionDataNode = objectMapper.readTree(favoriteQuestion.getQuestionData());
-            
-            // 提取题目文本
-            if (questionDataNode.has("question")) {
+
+            // Current clients store questionText; retain question for legacy favorites.
+            if (questionDataNode.hasNonNull("questionText")) {
+                response.setQuestionText(questionDataNode.get("questionText").asText());
+            } else if (questionDataNode.hasNonNull("question")) {
                 response.setQuestionText(questionDataNode.get("question").asText());
             }
-            
+
             // 提取领域
             if (questionDataNode.has("domain")) {
                 response.setDomain(questionDataNode.get("domain").asText());
             }
-            
+
             // 提取难度
             if (questionDataNode.has("difficulty")) {
                 response.setDifficulty(questionDataNode.get("difficulty").asText());
             }
-            
+
         } catch (Exception e) {
             // 如果解析失败，使用默认值
             response.setQuestionText("题目解析失败");
         }
-        
+
         return response;
     }
 }

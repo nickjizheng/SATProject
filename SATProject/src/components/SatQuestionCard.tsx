@@ -36,7 +36,7 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
       const favorited = await FavoriteQuestionService.checkFavoriteStatus(question.id);
       setIsFavorited(favorited);
     } catch (error) {
-      console.error('检查收藏状态失败:', error);
+      console.error('Failed to check favorite status:', error);
     }
   };
 
@@ -46,18 +46,18 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
       if (isFavorited) {
         await FavoriteQuestionService.removeFavoriteQuestion(question.id);
         setIsFavorited(false);
-        message.success('已取消收藏');
+        message.success('Removed from favorites.');
       } else {
         await FavoriteQuestionService.addFavoriteQuestion({
           questionId: question.id,
           questionData: JSON.stringify(question)
         });
         setIsFavorited(true);
-        message.success('已添加到收藏');
+        message.success('Added to favorites.');
       }
     } catch (error) {
-      console.error('操作收藏失败:', error);
-      message.error('操作失败，请重试');
+      console.error('Failed to update favorite:', error);
+      message.error('That action failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -72,10 +72,10 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
 
   const getOptionStyle = (optionKey: string) => {
     if (!showAnswer || !answerResult) return {};
-    
+
     const isSelected = selectedAnswer === optionKey;
     const isCorrect = answerResult.correctAnswer === optionKey;
-    
+
     if (isCorrect) {
       return { backgroundColor: '#f6ffed', borderColor: '#52c41a' };
     } else if (isSelected && !isCorrect) {
@@ -86,10 +86,10 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
 
   const getOptionIcon = (optionKey: string) => {
     if (!showAnswer || !answerResult) return null;
-    
+
     const isCorrect = answerResult.correctAnswer === optionKey;
     const isSelected = selectedAnswer === optionKey;
-    
+
     if (isCorrect) {
       return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
     } else if (isSelected && !isCorrect) {
@@ -99,15 +99,15 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
   };
 
   return (
-    <div style={{ 
+    <div style={{
       width: '100%',
       minHeight: '600px',
       padding: '24px'
     }}>
       {/* 题目信息头部 */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: '24px',
         paddingBottom: '16px',
@@ -131,12 +131,12 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
       </div>
 
       {/* SVG内容 */}
-      {question.visualsSvgContent && 
-       question.visualsSvgContent !== 'null' && 
+      {question.visualsSvgContent &&
+       question.visualsSvgContent !== 'null' &&
        question.visualsSvgContent.trim() !== '' && (
-        <div 
-          style={{ 
-            textAlign: 'center', 
+        <div
+          style={{
+            textAlign: 'center',
             margin: '24px 0',
             border: '1px solid #e8e8e8',
             borderRadius: '8px',
@@ -148,16 +148,16 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
       )}
 
       {/* 题目段落 */}
-      {question.questionParagraph && 
-       question.questionParagraph !== 'null' && 
+      {question.questionParagraph &&
+       question.questionParagraph !== 'null' &&
        question.questionParagraph.trim() !== '' && (
-        <div style={{ 
-          backgroundColor: '#f8f9fa', 
+        <div style={{
+          backgroundColor: '#f8f9fa',
           border: '1px solid #e9ecef',
           borderRadius: '8px',
           padding: '16px',
           marginBottom: '24px',
-          maxHeight: '200px', 
+          maxHeight: '200px',
           overflow: 'auto'
         }}>
           <Paragraph style={{ margin: 0, fontSize: '15px', lineHeight: '1.6' }}>
@@ -167,18 +167,18 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
       )}
 
       {/* 题目文本 */}
-      {question.questionText && 
-       question.questionText !== 'null' && 
+      {question.questionText &&
+       question.questionText !== 'null' &&
        question.questionText.trim() !== '' && (
-        <div style={{ 
+        <div style={{
           marginBottom: '32px',
           padding: '20px',
           backgroundColor: '#fff',
           border: '1px solid #e8e8e8',
           borderRadius: '8px'
         }}>
-          <Title level={4} style={{ 
-            margin: 0, 
+          <Title level={4} style={{
+            margin: 0,
             fontSize: '18px',
             lineHeight: '1.5',
             color: '#262626'
@@ -190,13 +190,13 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
 
       {/* 选项区域 */}
       <div style={{ marginBottom: '32px' }}>
-        <Text strong style={{ 
-          marginBottom: '20px', 
+        <Text strong style={{
+          marginBottom: '20px',
           display: 'block',
           fontSize: '16px',
           color: '#262626'
         }}>
-          请选择正确答案：
+          Choose the best answer:
         </Text>
         <Radio.Group
           value={selectedAnswer}
@@ -222,7 +222,7 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
                 }}
               >
                 <Space style={{ width: '100%' }}>
-                  <Text strong style={{ 
+                  <Text strong style={{
                     fontSize: '16px',
                     color: selectedAnswer === option.key ? '#1890ff' : '#262626',
                     minWidth: '24px'
@@ -248,21 +248,21 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
             size="large"
             onClick={onSubmitAnswer}
             disabled={!selectedAnswer}
-            style={{ 
+            style={{
               minWidth: '160px',
               height: '48px',
               fontSize: '16px',
               borderRadius: '8px'
             }}
           >
-            提交答案
+            Submit Answer
           </Button>
         </div>
       )}
 
       {/* 答案结果 */}
       {showAnswer && answerResult && (
-        <div style={{ 
+        <div style={{
           marginTop: '24px',
           padding: '20px',
           backgroundColor: '#f8f9fa',
@@ -275,12 +275,12 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
                 {answerResult.isCorrect ? (
                   <>
                     <CheckCircleOutlined style={{ color: '#52c41a', fontSize: '18px' }} />
-                    <Text strong style={{ color: '#52c41a', fontSize: '16px' }}>回答正确！</Text>
+                    <Text strong style={{ color: '#52c41a', fontSize: '16px' }}>Correct answer!</Text>
                   </>
                 ) : (
                   <>
                     <CloseCircleOutlined style={{ color: '#ff4d4f', fontSize: '18px' }} />
-                    <Text strong style={{ color: '#ff4d4f', fontSize: '16px' }}>回答错误</Text>
+                    <Text strong style={{ color: '#ff4d4f', fontSize: '16px' }}>Incorrect answer</Text>
                   </>
                 )}
               </Space>
@@ -288,11 +288,11 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
             description={
               <div style={{ marginTop: '12px' }}>
                 <div style={{ marginBottom: '8px' }}>
-                  <Text style={{ fontSize: '14px' }}>您的答案: </Text>
+                  <Text style={{ fontSize: '14px' }}>Your answer: </Text>
                   <Text strong style={{ fontSize: '14px' }}>{answerResult.userAnswer}</Text>
                 </div>
                 <div>
-                  <Text style={{ fontSize: '14px' }}>正确答案: </Text>
+                  <Text style={{ fontSize: '14px' }}>Correct answer: </Text>
                   <Text strong style={{ color: '#52c41a', fontSize: '14px' }}>
                     {answerResult.correctAnswer}
                   </Text>
@@ -301,7 +301,7 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
             }
             type={answerResult.isCorrect ? 'success' : 'error'}
             showIcon={false}
-            style={{ 
+            style={{
               border: 'none',
               backgroundColor: 'transparent',
               padding: 0
@@ -309,23 +309,23 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
           />
 
           {/* 题目解析 */}
-          {answerResult.explanation && 
-           answerResult.explanation !== 'null' && 
+          {answerResult.explanation &&
+           answerResult.explanation !== 'null' &&
            answerResult.explanation.trim() !== '' && (
-            <div style={{ 
+            <div style={{
               marginTop: '20px',
               padding: '16px',
               backgroundColor: '#fff',
               borderRadius: '6px',
               border: '1px solid #e8e8e8'
             }}>
-              <Text strong style={{ 
-                display: 'block', 
+              <Text strong style={{
+                display: 'block',
                 marginBottom: '12px',
                 fontSize: '15px',
                 color: '#262626'
               }}>
-                题目解析
+                Explanation
               </Text>
               <Paragraph style={{ margin: 0, fontSize: '14px', lineHeight: '1.6' }}>
                 <MathRenderer text={answerResult.explanation} />

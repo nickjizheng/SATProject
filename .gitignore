@@ -2,3 +2,8 @@
 *.class
 Java/logs/
 Java/target/
+.run/
+.run-frontend*.log
+PeakSAT-answer-key-pipeline.zip
+answer-key-pipeline/
+SATProject/redesign-*.png

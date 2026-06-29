@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Select, Spin, message, Typography, Space, Row, Col, Progress, Statistic, Tag } from 'antd';
+import { Alert, Card, Button, Select, Spin, message, Typography, Space, Row, Col, Progress, Statistic, Tag } from 'antd';
 import { ReloadOutlined, LeftOutlined, RightOutlined, TrophyOutlined } from '@ant-design/icons';
 import type { SatQuestion, AnswerResponse } from '../types/sat';
 import { SatService } from '../services/satService';
@@ -18,15 +18,19 @@ const SatPracticePage: React.FC = () => {
   const [domains, setDomains] = useState<string[]>([]);
   const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [questionCount, setQuestionCount] = useState(10);
-  const [practiceStats, setPracticeStats] = useState({
+  const [sessionId] = useState(() => `practice-session-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const [restoringAnswer, setRestoringAnswer] = useState(false);
+  const [restoredFromHistory, setRestoredFromHistory] = useState(false);
+  const [answerSummary, setAnswerSummary] = useState({
+    answeredQuestions: 0,
     correctAnswers: 0,
-    totalAnswered: 0,
-    startTime: Date.now()
+    accuracy: 0,
   });
 
   // Load domain list
   useEffect(() => {
     loadDomains();
+    loadAnswerSummary();
   }, []);
 
   // Load questions
@@ -34,6 +38,15 @@ const SatPracticePage: React.FC = () => {
     // Try to load questions regardless of domain data
     loadQuestions();
   }, [selectedDomain, questionCount]);
+
+  const loadAnswerSummary = async () => {
+    try {
+      const summary = await SatService.getAnswerSummary();
+      setAnswerSummary(summary);
+    } catch (error) {
+      console.error('Failed to load SAT answer summary:', error);
+    }
+  };
 
   const loadDomains = async () => {
     try {
@@ -65,13 +78,14 @@ const SatPracticePage: React.FC = () => {
       setCurrentQuestionIndex(0);
       setSelectedAnswer('');
       setAnswerResult(null);
-      
+      setRestoredFromHistory(false);
+
       if (questionsList.length === 0) {
-        message.warning('未找到任何题目数据，请检查数据库');
+        message.warning('No questions with verified answer keys are available for this selection.');
       }
     } catch (error) {
-      console.error('加载题目失败:', error);
-      message.error('加载题目失败: ' + (error as Error).message);
+      console.error('Failed to load questions:', error);
+      message.error('Failed to load questions: ' + (error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -80,67 +94,79 @@ const SatPracticePage: React.FC = () => {
   const handleAnswerSelect = (answer: string) => {
     setSelectedAnswer(answer);
     setAnswerResult(null);
+    setRestoredFromHistory(false);
   };
 
   const handleSubmitAnswer = async () => {
     if (!selectedAnswer) {
-      message.warning('请选择一个答案');
+      message.warning('Please choose an answer.');
       return;
     }
 
     const currentQuestion = questions[currentQuestionIndex];
     if (!currentQuestion) {
-      message.error('当前题目不存在');
+      message.error('The current question is unavailable.');
       return;
     }
 
     try {
-      // Generate temporary session ID for practice page
-      const tempSessionId = 'temp-session-' + Date.now();
-      const result = await SatService.submitAnswer({
+      const result = await SatService.submitAnswerWithRecord({
         questionId: currentQuestion.id,
         answer: selectedAnswer,
-        sessionId: tempSessionId,
+        sessionId,
       });
-      
+
       setAnswerResult(result);
-      
-      // 更新统计信息
-      setPracticeStats(prev => ({
-        ...prev,
-        totalAnswered: prev.totalAnswered + 1,
-        correctAnswers: result.isCorrect ? prev.correctAnswers + 1 : prev.correctAnswers
-      }));
-      
-      message.success(result.isCorrect ? '回答正确！' : '回答错误，继续努力！');
+      setRestoredFromHistory(false);
+      await loadAnswerSummary();
+
+      message.success(result.isCorrect ? 'Correct answer!' : 'Incorrect answer. Keep going.');
     } catch (error) {
       console.error('Submit answer error:', error);
-      message.error('提交答案失败: ' + (error as Error).message);
+      message.error('Failed to submit your answer: ' + (error as Error).message);
+    }
+  };
+
+  const navigateToQuestion = async (index: number) => {
+    const targetQuestion = questions[index];
+    setCurrentQuestionIndex(index);
+    setSelectedAnswer('');
+    setAnswerResult(null);
+    setRestoredFromHistory(false);
+    setRestoringAnswer(true);
+
+    try {
+      const recordedAnswer = await SatService.getRecordedAnswer(targetQuestion.id, sessionId);
+      if (recordedAnswer) {
+        setSelectedAnswer(recordedAnswer.userAnswer);
+        setAnswerResult(recordedAnswer);
+        setRestoredFromHistory(true);
+      }
+    } catch (error) {
+      console.error('Failed to restore the saved attempt:', error);
+      message.error('Failed to restore the saved attempt.');
+    } finally {
+      setRestoringAnswer(false);
     }
   };
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setSelectedAnswer('');
-      setAnswerResult(null);
+      void navigateToQuestion(currentQuestionIndex + 1);
     }
   };
 
   const handlePrevQuestion = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-      setSelectedAnswer('');
-      setAnswerResult(null);
+      void navigateToQuestion(currentQuestionIndex - 1);
     }
   };
 
   const currentQuestion = questions[currentQuestionIndex];
   const progressPercent = questions.length > 0 ? Math.round(((currentQuestionIndex + 1) / questions.length) * 100) : 0;
-  const accuracyPercent = practiceStats.totalAnswered > 0 ? Math.round((practiceStats.correctAnswers / practiceStats.totalAnswered) * 100) : 0;
 
   return (
-    <div style={{ 
+    <div style={{
       minHeight: '100vh',
       background: '#f5f5f5',
       padding: '24px'
@@ -148,15 +174,15 @@ const SatPracticePage: React.FC = () => {
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* 页面标题 */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>SAT 练习模式</Title>
+          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>SAT Practice Mode</Title>
           <Text type="secondary" style={{ fontSize: '16px' }}>
-            选择科目和题目数量开始练习
+            Choose a domain and question count to start practicing.
           </Text>
         </div>
 
         {/* 控制面板 */}
-        <Card 
-          style={{ 
+        <Card
+          style={{
             marginBottom: '24px',
             borderRadius: '12px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
@@ -165,10 +191,10 @@ const SatPracticePage: React.FC = () => {
           <Row gutter={[24, 16]} align="middle">
             <Col xs={24} sm={8} md={6}>
               <div>
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>选择科目</Text>
+                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Domain</Text>
                 <Select
                   style={{ width: '100%' }}
-                  placeholder="全部科目"
+                  placeholder="All domains"
                   value={selectedDomain}
                   onChange={setSelectedDomain}
                   allowClear
@@ -181,44 +207,44 @@ const SatPracticePage: React.FC = () => {
             </Col>
             <Col xs={24} sm={8} md={6}>
               <div>
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>题目数量</Text>
+                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Question Count</Text>
                 <Select
                   style={{ width: '100%' }}
                   value={questionCount}
                   onChange={setQuestionCount}
                 >
-                  <Option value={5}>5 题</Option>
-                  <Option value={10}>10 题</Option>
-                  <Option value={20}>20 题</Option>
-                  <Option value={50}>50 题</Option>
+                  <Option value={5}>5 questions</Option>
+                  <Option value={10}>10 questions</Option>
+                  <Option value={20}>20 questions</Option>
+                  <Option value={50}>50 questions</Option>
                 </Select>
               </div>
             </Col>
             <Col xs={24} sm={8} md={6}>
-              <Button 
-                type="primary" 
-                icon={<ReloadOutlined />} 
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
                 onClick={loadQuestions}
                 loading={loading}
                 size="large"
                 style={{ width: '100%', marginTop: '28px', height: '32px', fontSize: '16px', borderRadius: '8px' }}
               >
-                开始练习
+                Start Practice
               </Button>
             </Col>
             <Col xs={24} sm={24} md={6}>
               <div style={{ textAlign: 'right' }}>
                 <Space>
                   <Statistic
-                    title="正确率"
-                    value={accuracyPercent}
+                    title="Accuracy"
+                    value={answerSummary.accuracy}
                     suffix="%"
-                    valueStyle={{ color: accuracyPercent >= 80 ? '#52c41a' : accuracyPercent >= 60 ? '#faad14' : '#ff4d4f' }}
+                    valueStyle={{ color: answerSummary.accuracy >= 80 ? '#52c41a' : answerSummary.accuracy >= 60 ? '#faad14' : '#ff4d4f' }}
                     prefix={<TrophyOutlined />}
                   />
                   <Statistic
-                    title="已答题"
-                    value={practiceStats.totalAnswered}
+                    title="Answered"
+                    value={answerSummary.answeredQuestions}
                     valueStyle={{ color: '#1890ff' }}
                   />
                 </Space>
@@ -230,17 +256,17 @@ const SatPracticePage: React.FC = () => {
         {loading ? (
           <Card style={{ textAlign: 'center', padding: '60px', borderRadius: '12px' }}>
             <Spin size="large" />
-            <div style={{ marginTop: '16px', fontSize: '16px' }}>正在加载题目...</div>
+            <div style={{ marginTop: '16px', fontSize: '16px' }}>Loading questions...</div>
           </Card>
         ) : questions.length === 0 ? (
           <Card style={{ textAlign: 'center', padding: '60px', borderRadius: '12px' }}>
-            <Text type="secondary" style={{ fontSize: '16px' }}>暂无题目数据，请检查数据库</Text>
+            <Text type="secondary" style={{ fontSize: '16px' }}>No questions with verified answer keys are available yet.</Text>
           </Card>
         ) : currentQuestion ? (
           <>
             {/* 进度条和导航 */}
-            <Card 
-              style={{ 
+            <Card
+              style={{
                 marginBottom: '24px',
                 borderRadius: '12px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
@@ -250,10 +276,10 @@ const SatPracticePage: React.FC = () => {
                 <Col xs={24} sm={12} md={8}>
                   <div style={{ textAlign: 'center' }}>
                     <Text strong style={{ fontSize: '18px' }}>
-                      第 {currentQuestionIndex + 1} 题 / 共 {questions.length} 题
+                      Question {currentQuestionIndex + 1} of {questions.length}
                     </Text>
-                    <Progress 
-                      percent={progressPercent} 
+                    <Progress
+                      percent={progressPercent}
                       strokeColor={{
                         '0%': '#108ee9',
                         '100%': '#87d068',
@@ -265,21 +291,23 @@ const SatPracticePage: React.FC = () => {
                 <Col xs={24} sm={12} md={8}>
                   <div style={{ textAlign: 'center' }}>
                     <Space>
-                      <Button 
+                      <Button
                         icon={<LeftOutlined />}
-                        onClick={handlePrevQuestion} 
+                        onClick={handlePrevQuestion}
                         disabled={currentQuestionIndex === 0}
+                        loading={restoringAnswer}
                         size="large"
                       >
-                        上一题
+                        Previous
                       </Button>
-                      <Button 
+                      <Button
                         icon={<RightOutlined />}
-                        onClick={handleNextQuestion} 
+                        onClick={handleNextQuestion}
                         disabled={currentQuestionIndex === questions.length - 1}
+                        loading={restoringAnswer}
                         size="large"
                       >
-                        下一题
+                        Next
                       </Button>
                     </Space>
                   </div>
@@ -294,9 +322,18 @@ const SatPracticePage: React.FC = () => {
               </Row>
             </Card>
 
+            {restoredFromHistory && (
+              <Alert
+                message="Saved attempt restored from your account"
+                type="info"
+                showIcon
+                style={{ marginBottom: '16px' }}
+              />
+            )}
+
             {/* 题目卡片 */}
-            <Card 
-              style={{ 
+            <Card
+              style={{
                 borderRadius: '12px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 minHeight: '600px'

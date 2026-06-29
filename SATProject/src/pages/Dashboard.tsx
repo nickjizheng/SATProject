@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Card, 
-  Typography, 
-  Button, 
-  Space, 
-  Row, 
-  Col, 
-  Avatar, 
-  Menu, 
+import {
+  Card,
+  Typography,
+  Button,
+  Space,
+  Row,
+  Col,
+  Avatar,
+  Menu,
   Dropdown,
   message,
   Statistic,
@@ -19,9 +19,9 @@ import {
   Empty,
   Divider
 } from 'antd';
-import { 
-  UserOutlined, 
-  LogoutOutlined, 
+import {
+  UserOutlined,
+  LogoutOutlined,
   SettingOutlined,
   BookOutlined,
   HeartOutlined,
@@ -56,9 +56,9 @@ const Dashboard: React.FC = () => {
     // 检查用户是否已登录
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
-    
+
     if (!token || !userStr) {
-      message.error('请先登录');
+      message.error('Please log in first.');
       navigate('/auth?mode=login');
       return;
     }
@@ -68,7 +68,7 @@ const Dashboard: React.FC = () => {
       setUserInfo(user);
       loadDashboardData();
     } catch (error) {
-      message.error('用户信息解析失败');
+      message.error('Failed to read your user information.');
       navigate('/auth?mode=login');
     }
   }, [navigate]);
@@ -80,12 +80,12 @@ const Dashboard: React.FC = () => {
         DashboardService.getUserStats(),
         DashboardService.getRecentActivities(8)
       ]);
-      
+
       setUserStats(stats);
       setRecentActivities(activities);
     } catch (error) {
       console.error('加载仪表盘数据失败:', error);
-      message.error('加载数据失败');
+      message.error('Failed to load dashboard data.');
     } finally {
       setLoading(false);
     }
@@ -95,21 +95,21 @@ const Dashboard: React.FC = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
-    message.success('已退出登录');
+    message.success('You have been logged out.');
     navigate('/');
   };
 
   const userMenu = (
     <Menu>
       <Menu.Item key="profile" icon={<UserOutlined />}>
-        个人资料
+        Profile
       </Menu.Item>
       <Menu.Item key="settings" icon={<SettingOutlined />}>
-        设置
+        Settings
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
-        退出登录
+        Log Out
       </Menu.Item>
     </Menu>
   );
@@ -133,19 +133,19 @@ const Dashboard: React.FC = () => {
     const now = new Date();
     const time = new Date(timestamp);
     const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return '刚刚';
-    if (diffInMinutes < 60) return `${diffInMinutes}分钟前`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}小时前`;
-    return `${Math.floor(diffInMinutes / 1440)}天前`;
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hr ago`;
+    return `${Math.floor(diffInMinutes / 1440)} day(s) ago`;
   };
 
   if (!userInfo || loading) {
     return (
-      <div style={{ 
-        height: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center',
         background: '#f5f5f5'
       }}>
@@ -155,13 +155,13 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div style={{ 
+    <div style={{
       padding: '24px',
       background: '#f5f5f5',
       minHeight: '100vh'
     }}>
       {/* 欢迎区域 */}
-      <div style={{ 
+      <div style={{
         marginBottom: '24px',
         display: 'flex',
         justifyContent: 'space-between',
@@ -169,23 +169,23 @@ const Dashboard: React.FC = () => {
       }}>
         <div>
           <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
-            欢迎回来，{userInfo.username}！
+            Welcome back, {userInfo.username}!
           </Title>
           <Text type="secondary" style={{ fontSize: '16px' }}>
-            继续您的SAT学习之旅
+            Keep going with your SAT prep journey.
           </Text>
         </div>
         <Dropdown overlay={userMenu} placement="bottomRight">
           <Button type="text" style={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar 
-              size="large" 
-              icon={<UserOutlined />} 
+            <Avatar
+              size="large"
+              icon={<UserOutlined />}
               style={{ marginRight: 8, background: '#1890ff' }}
             />
             <Space direction="vertical" size={0}>
               <Text strong>{userInfo.username}</Text>
               <Text type="secondary" style={{ fontSize: '12px' }}>
-                {userInfo.emailVerified ? '已验证' : '未验证'}
+                {userInfo.emailVerified ? 'Verified' : 'Unverified'}
               </Text>
             </Space>
           </Button>
@@ -195,9 +195,9 @@ const Dashboard: React.FC = () => {
       {/* 统计卡片 */}
       <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card 
+          <Card className="metric-card metric-teal"
             hoverable
-            style={{ 
+            style={{
               borderRadius: '16px',
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               color: 'white',
@@ -205,21 +205,21 @@ const Dashboard: React.FC = () => {
             }}
           >
             <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>已答题数</span>}
+              title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>Questions Answered</span>}
               value={userStats?.answeredQuestions || 0}
               valueStyle={{ color: 'white', fontSize: '28px' }}
               prefix={<BookOutlined />}
             />
             <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
-              共 {userStats?.totalQuestions || 0} 道题目
+              Total of {userStats?.totalQuestions || 0} questions
             </Text>
           </Card>
         </Col>
-        
+
         <Col xs={24} sm={12} lg={6}>
-          <Card 
+          <Card className="metric-card metric-coral"
             hoverable
-            style={{ 
+            style={{
               borderRadius: '16px',
               background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
               color: 'white',
@@ -227,22 +227,22 @@ const Dashboard: React.FC = () => {
             }}
           >
             <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>正确率</span>}
+              title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>Accuracy</span>}
               value={userStats?.averageScore || 0}
               suffix="%"
               valueStyle={{ color: 'white', fontSize: '28px' }}
               prefix={<TrophyOutlined />}
             />
             <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
-              正确 {userStats?.correctAnswers || 0} 题
+              {userStats?.correctAnswers || 0} correct answers
             </Text>
           </Card>
         </Col>
-        
+
         <Col xs={24} sm={12} lg={6}>
-          <Card 
+          <Card className="metric-card metric-ochre"
             hoverable
-            style={{ 
+            style={{
               borderRadius: '16px',
               background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
               color: 'white',
@@ -250,21 +250,21 @@ const Dashboard: React.FC = () => {
             }}
           >
             <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>学习天数</span>}
+              title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>Study Streak</span>}
               value={userStats?.studyStreak || 0}
               valueStyle={{ color: 'white', fontSize: '28px' }}
               prefix={<FireOutlined />}
             />
             <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
-              连续学习记录
+              Consecutive study days
             </Text>
           </Card>
         </Col>
-        
+
         <Col xs={24} sm={12} lg={6}>
-          <Card 
+          <Card className="metric-card metric-ink"
             hoverable
-            style={{ 
+            style={{
               borderRadius: '16px',
               background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
               color: 'white',
@@ -272,13 +272,13 @@ const Dashboard: React.FC = () => {
             }}
           >
             <Statistic
-              title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>收藏数量</span>}
+              title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>Favorites</span>}
               value={(userStats?.favoriteQuestions || 0) + (userStats?.favoriteWords || 0)}
               valueStyle={{ color: 'white', fontSize: '28px' }}
               prefix={<HeartOutlined />}
             />
             <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>
-              题目 {userStats?.favoriteQuestions || 0} + 单词 {userStats?.favoriteWords || 0}
+              Questions {userStats?.favoriteQuestions || 0} + Words {userStats?.favoriteWords || 0}
             </Text>
           </Card>
         </Col>
@@ -289,54 +289,54 @@ const Dashboard: React.FC = () => {
         {/* 左侧内容 */}
         <Col xs={24} lg={16}>
           {/* 快速操作 */}
-          <Card 
-            title="快速操作" 
+          <Card
+            title="Quick Actions"
             style={{ borderRadius: '16px', marginBottom: '24px' }}
             bodyStyle={{ padding: '20px' }}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} sm={12} md={8}>
-                <Button 
-                  type="primary" 
-                  size="large" 
+                <Button
+                  type="primary"
+                  size="large"
                   block
                   icon={<BookOutlined />}
                   onClick={() => navigate('/sat-practice')}
                   style={{ height: '60px', borderRadius: '12px' }}
                 >
-                  SAT 练习
+                  SAT Practice
                 </Button>
               </Col>
               <Col xs={24} sm={12} md={8}>
-                <Button 
-                  size="large" 
+                <Button
+                  size="large"
                   block
                   icon={<SearchOutlined />}
                   onClick={() => navigate('/dictionary')}
                   style={{ height: '60px', borderRadius: '12px' }}
                 >
-                  词典查询
+                  Dictionary
                 </Button>
               </Col>
               <Col xs={24} sm={12} md={8}>
-                <Button 
-                  size="large" 
+                <Button
+                  size="large"
                   block
                   icon={<StarOutlined />}
                   onClick={() => navigate('/favorite-questions')}
                   style={{ height: '60px', borderRadius: '12px' }}
                 >
-                  收藏题目
+                  Favorite Questions
                 </Button>
               </Col>
             </Row>
           </Card>
 
           {/* 最近活动 */}
-          <Card 
-            title="最近活动" 
+          <Card
+            title="Recent Activity"
             style={{ borderRadius: '16px' }}
-            extra={<Button type="link" icon={<RightOutlined />}>查看全部</Button>}
+            extra={<Button type="link" icon={<RightOutlined />}>View all</Button>}
             bodyStyle={{ padding: '20px' }}
           >
             {recentActivities.length > 0 ? (
@@ -359,7 +359,7 @@ const Dashboard: React.FC = () => {
                 )}
               />
             ) : (
-              <Empty description="暂无最近活动" />
+              <Empty description="No recent activity yet" />
             )}
           </Card>
         </Col>
@@ -367,15 +367,15 @@ const Dashboard: React.FC = () => {
         {/* 右侧内容 */}
         <Col xs={24} lg={8}>
           {/* 学习进度 */}
-          <Card 
-            title="学习进度" 
+          <Card
+            title="Study Progress"
             style={{ borderRadius: '16px', marginBottom: '24px' }}
             bodyStyle={{ padding: '20px' }}
           >
             <Space direction="vertical" style={{ width: '100%' }}>
               <div>
-                <Text strong>总体进度</Text>
-                <Progress 
+                <Text strong>Overall Progress</Text>
+                <Progress
                   percent={userStats ? Math.round((userStats.answeredQuestions / userStats.totalQuestions) * 100) : 0}
                   strokeColor={{
                     '0%': '#108ee9',
@@ -384,14 +384,14 @@ const Dashboard: React.FC = () => {
                   style={{ marginTop: 8 }}
                 />
                 <Text type="secondary" style={{ fontSize: '12px' }}>
-                  {userStats?.answeredQuestions || 0} / {userStats?.totalQuestions || 0} 题目
+                  {userStats?.answeredQuestions || 0} / {userStats?.totalQuestions || 0} questions
                 </Text>
               </div>
-              
+
               <Divider style={{ margin: '16px 0' }} />
-              
+
               <div>
-                <Text strong>各科目表现</Text>
+                <Text strong>Performance by Domain</Text>
                 <div style={{ marginTop: 12 }}>
                   {userStats?.domainStats.map((domain, index) => (
                     <div key={index} style={{ marginBottom: 12 }}>
@@ -401,7 +401,7 @@ const Dashboard: React.FC = () => {
                           {domain.averageScore.toFixed(1)}%
                         </Text>
                       </div>
-                      <Progress 
+                      <Progress
                         percent={domain.averageScore}
                         size="small"
                         strokeColor={index === 0 ? '#52c41a' : index === 1 ? '#1890ff' : '#fa8c16'}
@@ -414,28 +414,28 @@ const Dashboard: React.FC = () => {
           </Card>
 
           {/* 用户信息 */}
-          <Card 
-            title="账户信息" 
+          <Card
+            title="Account Info"
             style={{ borderRadius: '16px' }}
             bodyStyle={{ padding: '20px' }}
           >
             <Space direction="vertical" style={{ width: '100%' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Text strong>用户名</Text>
+                <Text strong>Username</Text>
                 <Text>{userInfo.username}</Text>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Text strong>邮箱</Text>
+                <Text strong>Email</Text>
                 <Text style={{ fontSize: '12px' }}>{userInfo.email}</Text>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Text strong>验证状态</Text>
+                <Text strong>Status</Text>
                 <Tag color={userInfo.emailVerified ? 'green' : 'orange'}>
-                  {userInfo.emailVerified ? '已验证' : '未验证'}
+                  {userInfo.emailVerified ? 'Verified' : 'Unverified'}
                 </Tag>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Text strong>用户ID</Text>
+                <Text strong>User ID</Text>
                 <Text style={{ fontSize: '12px' }}>#{userInfo.id}</Text>
               </div>
             </Space>

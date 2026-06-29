@@ -1,10 +1,11 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider, Layout } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
+import enUS from 'antd/locale/en_US';
 import { useState } from 'react';
 import Navigation from './components/Navigation';
 import AuthGuard from './components/AuthGuard';
 import HomePage from './pages/HomePage';
+import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import TestPage from './components/TestPage';
@@ -16,86 +17,59 @@ import FavoriteWordsPage from './pages/FavoriteWordsPage';
 import FavoriteQuestionsPage from './pages/FavoriteQuestionsPage';
 import './App.css';
 
-const { Content } = Layout;
-
-function App() {
+function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+  const isAuthRoute = location.pathname === '/auth';
+  const hasAppChrome = location.pathname !== '/' && !isAuthRoute;
 
   return (
-    <ConfigProvider locale={zhCN}>
-      <Router>
-        <div className="App">
-          <Layout style={{ minHeight: '100vh' }}>
-            <Navigation collapsed={collapsed} onCollapse={setCollapsed} />
-            <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
-              <Content style={{ 
-                margin: 0, 
-                padding: 0,
-                background: '#f5f5f5',
-                minHeight: '100vh'
-              }}>
-                <Routes>
-                  {/* 默认重定向到登录页面 */}
-                  <Route path="/" element={<Navigate to="/auth?mode=login" replace />} />
-                  <Route path="/auth" element={<AuthPage />} />
-                  
-                  {/* 需要登录的页面 */}
-                  <Route path="/home" element={
-                    <AuthGuard>
-                      <HomePage />
-                    </AuthGuard>
-                  } />
-                  <Route path="/dashboard" element={
-                    <AuthGuard>
-                      <Dashboard />
-                    </AuthGuard>
-                  } />
-                  <Route path="/test" element={
-                    <AuthGuard>
-                      <TestPage />
-                    </AuthGuard>
-                  } />
-                  <Route path="/sat-practice" element={
-                    <AuthGuard>
-                      <SatPracticePage />
-                    </AuthGuard>
-                  } />
-                  <Route path="/sat-single" element={
-                    <AuthGuard>
-                      <SatSingleQuestionPage />
-                    </AuthGuard>
-                  } />
-                  <Route path="/sat-debug" element={
-                    <AuthGuard>
-                      <SatDebugPage />
-                    </AuthGuard>
-                  } />
-                  <Route path="/dictionary" element={
-                    <AuthGuard>
-                      <DictionaryPage />
-                    </AuthGuard>
-                  } />
-                  <Route path="/favorite-words" element={
-                    <AuthGuard>
-                      <FavoriteWordsPage />
-                    </AuthGuard>
-                  } />
-                  <Route path="/favorite-questions" element={
-                    <AuthGuard>
-                      <FavoriteQuestionsPage />
-                    </AuthGuard>
-                  } />
-                  
-                  {/* 404重定向到登录页面 */}
-                  <Route path="*" element={<Navigate to="/auth?mode=login" replace />} />
-                </Routes>
-              </Content>
-            </Layout>
-          </Layout>
+    <div className={`App app-shell ${collapsed ? 'is-collapsed' : ''} ${!hasAppChrome ? 'is-auth' : ''}`}>
+      {hasAppChrome && <Navigation collapsed={collapsed} onCollapse={setCollapsed} />}
+      <main className="app-main">
+        <div className="route-stage">
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/home" element={<AuthGuard><HomePage /></AuthGuard>} />
+            <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+            <Route path="/test" element={<AuthGuard><TestPage /></AuthGuard>} />
+            <Route path="/sat-practice" element={<AuthGuard><SatPracticePage /></AuthGuard>} />
+            <Route path="/sat-single" element={<AuthGuard><SatSingleQuestionPage /></AuthGuard>} />
+            <Route path="/sat-debug" element={<AuthGuard><SatDebugPage /></AuthGuard>} />
+            <Route path="/dictionary" element={<AuthGuard><DictionaryPage /></AuthGuard>} />
+            <Route path="/favorite-words" element={<AuthGuard><FavoriteWordsPage /></AuthGuard>} />
+            <Route path="/favorite-questions" element={<AuthGuard><FavoriteQuestionsPage /></AuthGuard>} />
+            <Route path="*" element={<Navigate to="/auth?mode=login" replace />} />
+          </Routes>
         </div>
-      </Router>
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ConfigProvider
+      locale={enUS}
+      theme={{
+        token: {
+          colorPrimary: '#0f766e',
+          colorInfo: '#0f766e',
+          colorSuccess: '#2f855a',
+          colorWarning: '#d97706',
+          colorError: '#dc5d45',
+          colorText: '#1f2927',
+          colorTextSecondary: '#6f7976',
+          colorBgContainer: '#fffdf8',
+          borderRadius: 12,
+          fontFamily: '"Manrope Variable", sans-serif',
+        },
+      }}
+    >
+      <Router><AppShell /></Router>
     </ConfigProvider>
   );
 }
 
-export default App
+export default App;

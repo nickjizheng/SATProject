@@ -13,7 +13,63 @@ public class FavoriteWordResponse {
     private String shortDefinition; // 提取的简短定义
     private String partOfSpeech; // 词性
     private String pronunciation; // 发音
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getWord() {
+        return word;
+    }
+
+    public void setWord(String word) {
+        this.word = word;
+    }
+
+    public String getWordData() {
+        return wordData;
+    }
+
+    public void setWordData(String wordData) {
+        this.wordData = wordData;
+    }
+
+    public String getShortDefinition() {
+        return shortDefinition;
+    }
+
+    public void setShortDefinition(String shortDefinition) {
+        this.shortDefinition = shortDefinition;
+    }
+
+    public String getPartOfSpeech() {
+        return partOfSpeech;
+    }
+
+    public void setPartOfSpeech(String partOfSpeech) {
+        this.partOfSpeech = partOfSpeech;
+    }
+
+    public String getPronunciation() {
+        return pronunciation;
+    }
+
+    public void setPronunciation(String pronunciation) {
+        this.pronunciation = pronunciation;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
 }

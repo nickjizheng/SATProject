@@ -29,10 +29,10 @@ const TestPage: React.FC = () => {
     try {
       const response = await authService.sendVerificationCode({ email: 'test@example.com' });
       setResult(JSON.stringify(response, null, 2));
-      message.success('测试成功！');
+      message.success('Test succeeded.');
     } catch (error: any) {
       setResult(JSON.stringify(error, null, 2));
-      message.error('测试失败');
+      message.error('Test failed.');
     } finally {
       setLoading(false);
     }
@@ -48,18 +48,18 @@ const TestPage: React.FC = () => {
         sessionId: 'test-session-' + Date.now()
       });
       setResult(JSON.stringify(response, null, 2));
-      message.success('提交答案测试成功！');
+      message.success('Answer submission test succeeded.');
     } catch (error: any) {
       setResult(JSON.stringify(error, null, 2));
-      message.error('提交答案测试失败');
+      message.error('Answer submission test failed.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ 
-      height: 'calc(100vh - 80px)', 
+    <div style={{
+      height: 'calc(100vh - 80px)',
       width: '100vw',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
@@ -67,8 +67,8 @@ const TestPage: React.FC = () => {
       justifyContent: 'center',
       padding: '40px 24px'
     }}>
-      <Card style={{ 
-        width: 600, 
+      <Card style={{
+        width: 600,
         borderRadius: '20px',
         background: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(20px)'
@@ -76,16 +76,16 @@ const TestPage: React.FC = () => {
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div style={{ textAlign: 'center' }}>
             <Title level={2} className="gradient-text">
-              API 测试页面
+              API Test Page
             </Title>
             <Text type="secondary">
-              测试前后端跨域集成
+              Test frontend and backend integration
             </Text>
           </div>
 
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               size="large"
               loading={loading}
               onClick={testSendCode}
@@ -97,11 +97,11 @@ const TestPage: React.FC = () => {
                 fontWeight: 600
               }}
             >
-              测试发送验证码API
+              Test Verification Code API
             </Button>
-            
-            <Button 
-              type="default" 
+
+            <Button
+              type="default"
               size="large"
               loading={loading}
               onClick={testSubmitAnswer}
@@ -113,14 +113,14 @@ const TestPage: React.FC = () => {
                 fontWeight: 600
               }}
             >
-              测试提交答案API
+              Test Submit Answer API
             </Button>
           </Space>
 
           {result && (
-            <Card 
-              size="small" 
-              style={{ 
+            <Card
+              size="small"
+              style={{
                 background: '#f8f9fa',
                 borderRadius: '8px',
                 fontFamily: 'monospace',
@@ -135,18 +135,18 @@ const TestPage: React.FC = () => {
             </Card>
           )}
 
-          <Divider>数学公式测试</Divider>
+          <Divider>Math Formula Tests</Divider>
 
           <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-            <Text strong>测试各种LaTeX格式的数学公式渲染</Text>
+            <Text strong>Preview LaTeX rendering in several formats</Text>
           </div>
 
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             {testMathFormulas.map((formula, index) => (
-              <Card 
+              <Card
                 key={index}
-                size="small" 
-                style={{ 
+                size="small"
+                style={{
                   background: '#fff',
                   borderRadius: '8px',
                   border: '1px solid #e8e8e8'
@@ -154,12 +154,12 @@ const TestPage: React.FC = () => {
               >
                 <div style={{ marginBottom: '8px' }}>
                   <Text type="secondary" style={{ fontSize: '12px' }}>
-                    原始文本:
+                    Raw text:
                   </Text>
                 </div>
-                <div style={{ 
-                  background: '#f5f5f5', 
-                  padding: '8px', 
+                <div style={{
+                  background: '#f5f5f5',
+                  padding: '8px',
                   borderRadius: '4px',
                   fontFamily: 'monospace',
                   fontSize: '12px',
@@ -169,12 +169,12 @@ const TestPage: React.FC = () => {
                 </div>
                 <div>
                   <Text type="secondary" style={{ fontSize: '12px' }}>
-                    渲染结果:
+                    Rendered result:
                   </Text>
                 </div>
-                <div style={{ 
-                  background: '#fafafa', 
-                  padding: '12px', 
+                <div style={{
+                  background: '#fafafa',
+                  padding: '12px',
                   borderRadius: '4px',
                   border: '1px solid #e8e8e8'
                 }}>

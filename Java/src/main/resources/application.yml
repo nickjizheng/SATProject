@@ -49,3 +49,7 @@ file:
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.sts.classSync.model
+
+google:
+  oauth:
+    client-id: ${GOOGLE_CLIENT_ID:446311994602-2rtodkte7ldbp4f2qhnpusj8anf09vfg.apps.googleusercontent.com}

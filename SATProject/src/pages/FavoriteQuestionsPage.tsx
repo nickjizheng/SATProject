@@ -30,8 +30,8 @@ const FavoriteQuestionsPage: React.FC = () => {
       const questions = await FavoriteQuestionService.getFavoriteQuestions();
       setFavoriteQuestions(questions);
     } catch (error) {
-      console.error('加载收藏题目失败:', error);
-      message.error('加载收藏题目失败');
+      console.error('Failed to load favorite questions:', error);
+      message.error('Failed to load favorite questions.');
     } finally {
       setLoading(false);
     }
@@ -42,10 +42,10 @@ const FavoriteQuestionsPage: React.FC = () => {
       setDeletingIds(prev => new Set(prev).add(questionId));
       await FavoriteQuestionService.removeFavoriteQuestion(questionId);
       setFavoriteQuestions(prev => prev.filter(q => q.questionId !== questionId));
-      message.success('已取消收藏');
+      message.success('Removed from favorites.');
     } catch (error) {
-      console.error('删除收藏失败:', error);
-      message.error('删除失败，请重试');
+      console.error('Failed to delete favorite:', error);
+      message.error('Failed to delete favorite. Please try again.');
     } finally {
       setDeletingIds(prev => {
         const newSet = new Set(prev);
@@ -63,8 +63,8 @@ const FavoriteQuestionsPage: React.FC = () => {
       setShowAnswer(false);
       setViewModalVisible(true);
     } catch (error) {
-      console.error('解析题目数据失败:', error);
-      message.error('题目数据解析失败');
+      console.error('Failed to parse question data:', error);
+      message.error('Failed to parse question data.');
     }
   };
 
@@ -78,29 +78,26 @@ const FavoriteQuestionsPage: React.FC = () => {
 
   const handleSubmitAnswer = async () => {
     if (!selectedAnswer || !currentQuestion) {
-      message.warning('请选择一个答案');
+      message.warning('Please choose an answer.');
       return;
     }
 
     setSubmitting(true);
     try {
-      // 生成临时会话ID
       const tempSessionId = 'favorite-session-' + Date.now();
-      
-      // 调用后端API提交答案
       const result = await SatService.submitAnswerWithRecord({
         questionId: currentQuestion.id,
         answer: selectedAnswer,
         sessionId: tempSessionId,
       });
-      
+
       setAnswerResult(result);
       setShowAnswer(true);
-      
-      message.success(result.isCorrect ? '回答正确！' : '回答错误，继续努力！');
+
+      message.success(result.isCorrect ? 'Correct answer!' : 'Incorrect answer. Keep going.');
     } catch (error) {
-      console.error('提交答案失败:', error);
-      message.error('提交答案失败，请重试');
+      console.error('Failed to submit answer:', error);
+      message.error('Failed to submit your answer. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -108,11 +105,11 @@ const FavoriteQuestionsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '400px' 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '400px'
       }}>
         <Spin size="large" />
       </div>
@@ -124,7 +121,7 @@ const FavoriteQuestionsPage: React.FC = () => {
       <div style={{ padding: '40px', textAlign: 'center' }}>
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="还没有收藏任何题目"
+          description="You have not saved any questions yet."
         />
       </div>
     );
@@ -135,9 +132,9 @@ const FavoriteQuestionsPage: React.FC = () => {
       <div style={{ marginBottom: '24px' }}>
         <Title level={2}>
           <HeartFilled style={{ color: '#ff4d4f', marginRight: '8px' }} />
-          我收藏的题目
+          My Favorite Questions
         </Title>
-        <Text type="secondary">共 {favoriteQuestions.length} 道题目</Text>
+        <Text type="secondary">{favoriteQuestions.length} saved questions</Text>
       </div>
 
       <List
@@ -153,7 +150,7 @@ const FavoriteQuestionsPage: React.FC = () => {
                   icon={<EyeOutlined />}
                   onClick={() => handleViewQuestion(item.questionData)}
                 >
-                  查看题目
+                  View Question
                 </Button>,
                 <Button
                   key="delete"
@@ -163,7 +160,7 @@ const FavoriteQuestionsPage: React.FC = () => {
                   loading={deletingIds.has(item.questionId)}
                   onClick={() => handleDelete(item.questionId)}
                 >
-                  取消收藏
+                  Remove
                 </Button>
               ]}
             >
@@ -175,67 +172,65 @@ const FavoriteQuestionsPage: React.FC = () => {
                   {item.difficulty && (
                     <Tag color="orange">{item.difficulty}</Tag>
                   )}
-                  <Tag color="green">题目ID: {item.questionId}</Tag>
+                  <Tag color="green">Question ID: {item.questionId}</Tag>
                 </Space>
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <Text strong>题目内容：</Text>
+                <Text strong>Question:</Text>
                 <div style={{ marginTop: '8px' }}>
-                  <MathRenderer text={item.questionText || '题目内容解析失败'} />
+                  <MathRenderer text={item.questionText || 'Unable to display the question text.'} />
                 </div>
               </div>
 
               <div style={{ color: '#666', fontSize: '12px' }}>
-                收藏时间：{new Date(item.createdAt).toLocaleString()}
+                Saved on: {new Date(item.createdAt).toLocaleString()}
               </div>
             </Card>
           </List.Item>
         )}
       />
 
-      {/* 查看题目模态框 */}
       <Modal
-        title="题目详情"
+        title="Question Details"
         open={viewModalVisible}
         onCancel={handleCloseModal}
         width={800}
         footer={[
           <Button key="close" onClick={handleCloseModal}>
-            关闭
+            Close
           </Button>,
           !showAnswer && (
-            <Button 
-              key="submit" 
-              type="primary" 
+            <Button
+              key="submit"
+              type="primary"
               onClick={handleSubmitAnswer}
               disabled={!selectedAnswer}
               loading={submitting}
             >
-              提交答案
+              Submit Answer
             </Button>
           )
         ]}
       >
         {currentQuestion && (
           <div>
-            {/* 题目信息 */}
             <div style={{ marginBottom: '20px' }}>
               <Space wrap>
                 {currentQuestion.domain && (
                   <Tag color="blue">{getDomainDisplayName(currentQuestion.domain)}</Tag>
                 )}
-                <Tag color="green">题目ID: {currentQuestion.id}</Tag>
+                <Tag color="green">Question ID: {currentQuestion.id}</Tag>
               </Space>
             </div>
 
             {/* SVG内容 */}
-            {currentQuestion.visualsSvgContent && 
-             currentQuestion.visualsSvgContent !== 'null' && 
+            {currentQuestion.visualsSvgContent &&
+             currentQuestion.visualsSvgContent !== 'null' &&
              currentQuestion.visualsSvgContent.trim() !== '' && (
-              <div 
-                style={{ 
-                  textAlign: 'center', 
+              <div
+                style={{
+                  textAlign: 'center',
                   margin: '20px 0',
                   border: '1px solid #e8e8e8',
                   borderRadius: '8px',
@@ -247,11 +242,11 @@ const FavoriteQuestionsPage: React.FC = () => {
             )}
 
             {/* 题目段落 */}
-            {currentQuestion.questionParagraph && 
-             currentQuestion.questionParagraph !== 'null' && 
+            {currentQuestion.questionParagraph &&
+             currentQuestion.questionParagraph !== 'null' &&
              currentQuestion.questionParagraph.trim() !== '' && (
-              <div style={{ 
-                backgroundColor: '#f8f9fa', 
+              <div style={{
+                backgroundColor: '#f8f9fa',
                 border: '1px solid #e9ecef',
                 borderRadius: '8px',
                 padding: '16px',
@@ -264,18 +259,18 @@ const FavoriteQuestionsPage: React.FC = () => {
             )}
 
             {/* 题目文本 */}
-            {currentQuestion.questionText && 
-             currentQuestion.questionText !== 'null' && 
+            {currentQuestion.questionText &&
+             currentQuestion.questionText !== 'null' &&
              currentQuestion.questionText.trim() !== '' && (
-              <div style={{ 
+              <div style={{
                 marginBottom: '24px',
                 padding: '20px',
                 backgroundColor: '#fff',
                 border: '1px solid #e8e8e8',
                 borderRadius: '8px'
               }}>
-                <Title level={4} style={{ 
-                  margin: 0, 
+                <Title level={4} style={{
+                  margin: 0,
                   fontSize: '18px',
                   lineHeight: '1.5',
                   color: '#262626'
@@ -287,15 +282,15 @@ const FavoriteQuestionsPage: React.FC = () => {
 
             {/* 选项 */}
             <div style={{ marginBottom: '24px' }}>
-              <Text strong style={{ 
-                marginBottom: '16px', 
+              <Text strong style={{
+                marginBottom: '16px',
                 display: 'block',
                 fontSize: '16px'
               }}>
-                请选择答案：
+                Choose your answer:
               </Text>
-              <Radio.Group 
-                value={selectedAnswer} 
+              <Radio.Group
+                value={selectedAnswer}
                 onChange={(e) => setSelectedAnswer(e.target.value)}
                 style={{ width: '100%' }}
               >
@@ -306,23 +301,23 @@ const FavoriteQuestionsPage: React.FC = () => {
                     { key: 'C', value: currentQuestion.choiceC },
                     { key: 'D', value: currentQuestion.choiceD },
                   ].filter(option => option.value && option.value !== 'null').map(option => (
-                    <Radio 
-                      key={option.key} 
+                    <Radio
+                      key={option.key}
                       value={option.key}
-                      style={{ 
+                      style={{
                         display: 'block',
                         padding: '12px',
                         border: '1px solid #e8e8e8',
                         borderRadius: '6px',
                         marginBottom: '8px',
-                        backgroundColor: showAnswer && answerResult ? 
-                          (option.key === answerResult.correctAnswer ? '#f6ffed' : 
+                        backgroundColor: showAnswer && answerResult ?
+                          (option.key === answerResult.correctAnswer ? '#f6ffed' :
                            selectedAnswer === option.key ? '#fff2f0' : '#fff') : '#fff'
                       }}
                     >
                       <Space>
-                        <Text strong style={{ 
-                          color: showAnswer && answerResult && option.key === answerResult.correctAnswer ? '#52c41a' : 
+                        <Text strong style={{
+                          color: showAnswer && answerResult && option.key === answerResult.correctAnswer ? '#52c41a' :
                                 showAnswer && answerResult && selectedAnswer === option.key && option.key !== answerResult.correctAnswer ? '#ff4d4f' : '#262626'
                         }}>
                           {option.key}.
@@ -343,7 +338,7 @@ const FavoriteQuestionsPage: React.FC = () => {
 
             {/* 答案结果 */}
             {showAnswer && answerResult && (
-              <div style={{ 
+              <div style={{
                 marginTop: '20px',
                 padding: '16px',
                 backgroundColor: '#f8f9fa',
@@ -354,35 +349,35 @@ const FavoriteQuestionsPage: React.FC = () => {
                   {answerResult.isCorrect ? (
                     <>
                       <CheckCircleOutlined style={{ color: '#52c41a', fontSize: '18px' }} />
-                      <Text strong style={{ color: '#52c41a', fontSize: '16px' }}>回答正确！</Text>
+                      <Text strong style={{ color: '#52c41a', fontSize: '16px' }}>Correct answer!</Text>
                     </>
                   ) : (
                     <>
                       <CloseCircleOutlined style={{ color: '#ff4d4f', fontSize: '18px' }} />
-                      <Text strong style={{ color: '#ff4d4f', fontSize: '16px' }}>回答错误</Text>
+                      <Text strong style={{ color: '#ff4d4f', fontSize: '16px' }}>Incorrect answer</Text>
                     </>
                   )}
                 </Space>
                 <div style={{ marginTop: '12px' }}>
-                  <Text style={{ fontSize: '14px' }}>您的答案: </Text>
+                  <Text style={{ fontSize: '14px' }}>Your answer: </Text>
                   <Text strong style={{ fontSize: '14px' }}>{answerResult.userAnswer}</Text>
                   <Divider type="vertical" />
-                  <Text style={{ fontSize: '14px' }}>正确答案: </Text>
+                  <Text style={{ fontSize: '14px' }}>Correct answer: </Text>
                   <Text strong style={{ color: '#52c41a', fontSize: '14px' }}>
                     {answerResult.correctAnswer}
                   </Text>
                 </div>
-                {answerResult.explanation && 
-                 answerResult.explanation !== 'null' && 
+                {answerResult.explanation &&
+                 answerResult.explanation !== 'null' &&
                  answerResult.explanation.trim() !== '' && (
                   <div style={{ marginTop: '16px' }}>
-                    <Text strong style={{ 
-                      display: 'block', 
+                    <Text strong style={{
+                      display: 'block',
                       marginBottom: '8px',
                       fontSize: '14px',
                       color: '#262626'
                     }}>
-                      题目解析
+                      Explanation
                     </Text>
                     <Paragraph style={{ margin: 0, fontSize: '14px', lineHeight: '1.6' }}>
                       <MathRenderer text={answerResult.explanation} />

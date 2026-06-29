@@ -13,19 +13,22 @@ import java.time.LocalDateTime;
  */
 @Mapper
 public interface EmailVerificationCodeMapper extends BaseMapper<EmailVerificationCode> {
-    
+
     /**
      * 查找有效的验证码
      */
     @Select("SELECT * FROM email_verification_codes WHERE email = #{email} AND code = #{code} AND type = #{type} AND used = 0 AND expires_at > #{now}")
     EmailVerificationCode findValidCode(String email, String code, String type, LocalDateTime now);
-    
+
+    @Select("SELECT * FROM email_verification_codes WHERE email = #{email} AND code = #{code} AND type = #{type} AND used = 0 ORDER BY created_at DESC LIMIT 1")
+    EmailVerificationCode findLatestUnusedCode(String email, String code, String type);
+
     /**
      * 标记验证码为已使用
      */
     @Update("UPDATE email_verification_codes SET used = 1 WHERE id = #{id}")
     int markCodeAsUsed(Long id);
-    
+
     /**
      * 清理过期的验证码
      */

@@ -33,13 +33,13 @@ const SatDebugPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      console.log('开始获取题目...');
+      console.log('Starting to fetch questions...');
       const questionsList = await SatService.getRandomQuestions(5);
-      console.log('获取到的题目:', questionsList);
+      console.log('Fetched questions:', questionsList);
       setQuestions(questionsList);
     } catch (err) {
-      console.error('获取题目失败:', err);
-      setError('获取题目失败: ' + (err as Error).message);
+      console.error('Failed to fetch questions:', err);
+      setError('Failed to fetch questions: ' + (err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -63,24 +63,24 @@ const SatDebugPage: React.FC = () => {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <Title level={2}>SAT API 调试页面</Title>
-      
+      <Title level={2}>SAT API Debug Page</Title>
+
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         {/* 测试按钮 */}
-        <Card title="API 测试">
+        <Card title="API Tests">
           <Space wrap>
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               onClick={testGetDomains}
               loading={loading}
             >
               Test Get Domains
             </Button>
-            <Button 
+            <Button
               onClick={testGetQuestions}
               loading={loading}
             >
-              测试获取随机题目
+              Test Random Questions
             </Button>
           </Space>
         </Card>
@@ -88,7 +88,7 @@ const SatDebugPage: React.FC = () => {
         {/* 错误信息 */}
         {error && (
           <Alert
-            message="错误"
+            message="Error"
             description={error}
             type="error"
             showIcon
@@ -100,7 +100,7 @@ const SatDebugPage: React.FC = () => {
           {domains.length > 0 ? (
             <Space wrap>
               {domains.map(domain => (
-                <Button 
+                <Button
                   key={domain}
                   onClick={() => testGetQuestionsByDomain(domain)}
                   loading={loading}

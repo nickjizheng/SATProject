@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `username` varchar(50) NOT NULL COMMENT '用户名',
   `email` varchar(100) NOT NULL COMMENT '邮箱',
   `password` varchar(255) NOT NULL COMMENT '密码(加密)',
+  `google_subject` varchar(255) DEFAULT NULL COMMENT 'Google account subject identifier',
   `email_verified` tinyint(1) NOT NULL DEFAULT '0' COMMENT '邮箱是否已验证',
   `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '用户状态: 1-正常, 0-禁用',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -12,6 +13,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_username` (`username`),
   UNIQUE KEY `uk_email` (`email`),
+  UNIQUE KEY `uk_google_subject` (`google_subject`),
   KEY `idx_email_verified` (`email_verified`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';

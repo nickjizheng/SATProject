@@ -80,6 +80,19 @@ POST /api/auth/resend-verification?email=test@example.com
 
 ## 配置说明
 
+### Google sign-in
+
+1. Create a **Web application** OAuth client in Google Cloud Console.
+2. Add `http://localhost:5173` to **Authorized JavaScript origins**.
+3. Apply `database/add_google_login.sql` to an existing database.
+4. Start the backend with the public client ID:
+
+```bash
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com" mvn spring-boot:run
+```
+
+The frontend reads this public client ID from `/api/auth/google/config`; no Google client secret is required by the browser flow.
+
 ### 1. 数据库配置
 在 `application.yml` 中配置MySQL连接信息：
 ```yaml

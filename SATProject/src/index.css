@@ -24,10 +24,11 @@
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; min-height: 100%; scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x: hidden; background: var(--paper); }
+html { min-width: 0; min-height: 100%; scroll-behavior: smooth; }
+body { margin: 0; min-width: 0; min-height: 100vh; overflow-x: hidden; background: var(--paper); }
 button, input, textarea, select { font: inherit; }
 #root { min-height: 100vh; }
+img, video, canvas { max-width: 100%; height: auto; }
 
 ::selection { color: white; background: var(--teal-bright); }
 
@@ -143,6 +144,38 @@ button, input, textarea, select { font: inherit; }
 .app-main .ant-modal-content { border: 1px solid var(--line); border-radius: 24px; background: #fbfaf6; box-shadow: 0 32px 90px rgba(31,41,39,.24); }
 .app-main .ant-empty-description { color: #78817e; }
 
+/* Content from SAT questions and dictionary entries can be wider than the viewport. */
+.math-renderer {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.math-renderer .math-block,
+.math-renderer .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+.math-renderer .katex-display { margin-inline: 0; }
+.question-visual {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.question-visual svg,
+.question-visual img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+.question-option-content { min-width: 0; }
+.question-option-content > .ant-space-item:nth-child(2) { min-width: 0; flex: 1; }
+
+.mobile-nav { bottom: max(12px, env(safe-area-inset-bottom)); }
+.mobile-more-panel { bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+
 .auth-canvas .ant-card {
   border: 1px solid rgba(255,255,255,.72) !important;
   border-radius: 28px !important;
@@ -153,16 +186,76 @@ button, input, textarea, select { font: inherit; }
 .auth-canvas .ant-btn-primary { border: 0 !important; background: var(--teal) !important; }
 .auth-canvas .ant-input-affix-wrapper { border-radius: 13px !important; border-color: var(--line) !important; background: #fff !important; }
 
-@media (max-width: 900px) {
-  .app-main, .app-shell.is-collapsed .app-main { margin-left: 0; padding-bottom: 76px; }
+@media (max-width: 1023px) {
+  .app-main, .app-shell.is-collapsed .app-main { margin-left: 0; padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
   .page-shell { padding: 28px 18px 52px; }
   .route-stage > div:not(.auth-canvas):not(.marketing-canvas) { padding: 28px 18px 52px !important; }
 }
 
 @media (max-width: 560px) {
+  .route-stage > div:not(.auth-canvas):not(.marketing-canvas) { padding: 22px 12px 42px !important; }
+  .page-shell { padding: 22px 12px 42px; }
   .auth-form-card { width: min(100%, 440px) !important; }
   .app-main .ant-card { border-radius: 20px !important; }
-  .app-main .ant-card-body { padding: 18px !important; }
+  .app-main .ant-card-body { padding: 16px !important; }
+  .app-main .ant-card-head { min-height: 54px; padding-inline: 16px; }
+  .app-main .ant-card-head-title { white-space: normal; }
+  .app-main .ant-btn:not(.ant-btn-link):not(.ant-btn-text),
+  .auth-canvas .ant-btn:not(.ant-btn-link):not(.ant-btn-text) { min-height: 44px; }
+  .app-main .ant-input,
+  .app-main .ant-input-affix-wrapper,
+  .auth-canvas .ant-input,
+  .auth-canvas .ant-input-affix-wrapper { min-height: 44px; }
+  .app-main .ant-select-single,
+  .app-main .ant-select-single .ant-select-selector { min-height: 44px !important; }
+  .app-main .ant-select-single .ant-select-selection-item,
+  .app-main .ant-select-single .ant-select-selection-placeholder { line-height: 42px !important; }
+
+  .page-title { font-size: clamp(2rem, 12vw, 3rem); }
+  .marketing-hero-actions,
+  .marketing-cta-actions { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; }
+  .marketing-hero-actions > button,
+  .marketing-cta-actions > button { width: 100%; }
+
+  .practice-page .ant-card { width: 100%; }
+  .practice-page .ant-card-body { min-width: 0; }
+  .practice-start-button { margin-top: 8px !important; }
+  .practice-stats,
+  .practice-stats .ant-space { width: 100%; justify-content: center; text-align: center !important; }
+  .question-navigation-actions { display: flex !important; width: 100%; }
+  .question-navigation-actions > .ant-space-item { flex: 1; }
+  .question-navigation-actions .ant-btn { width: 100%; padding-inline: 8px; }
+
+  .sat-question-card { min-height: 0 !important; padding: 0 !important; }
+  .sat-question-card .ant-radio-wrapper { min-width: 0; padding: 12px !important; }
+  .question-option-content { align-items: flex-start !important; white-space: normal; }
+  .question-option-content .ant-typography { overflow-wrap: anywhere; }
+
+  .dictionary-page,
+  .favorite-words-page { margin-top: 0 !important; }
+  .dictionary-search .ant-input-group-addon .ant-btn { min-width: 44px; padding-inline: 10px; }
+  .dictionary-result-heading { align-items: flex-start !important; gap: 12px; }
+  .dictionary-result-heading .ant-typography { min-width: 0; overflow-wrap: anywhere; }
+  .dictionary-pronunciation-row { display: flex !important; max-width: 100%; }
+  .dictionary-audio-button { max-width: 100%; padding: 8px 10px !important; white-space: normal; }
+  .dictionary-audio-button code { white-space: normal; overflow-wrap: anywhere; }
+  .favorite-word-remove { margin-left: 0 !important; }
+  .favorite-words-page .ant-list-item,
+  .favorite-questions-page .ant-list-item { padding-inline: 0; }
+
+  .ant-modal { top: 0; max-width: calc(100vw - 20px); margin: 10px auto; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+  .ant-modal .ant-modal-content { max-height: calc(100dvh - 20px); padding: 16px; border-radius: 20px; }
+  .ant-modal .ant-modal-body { max-height: calc(100dvh - 112px); overflow-x: hidden; overflow-y: auto; }
+  .ant-modal .ant-modal-footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  .ant-modal .ant-modal-footer .ant-btn { margin-inline-start: 0; }
+}
+
+@media (max-width: 380px) {
+  .verification-code-row { flex-direction: column; }
+  .verification-code-row > .ant-col { width: 100%; max-width: 100%; }
+  .verification-code-row .ant-btn { width: 100%; }
+  .auth-form-card .ant-card-body { padding: 14px !important; }
+  .auth-form-card .ant-space { max-width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -128,7 +128,7 @@ const FavoriteQuestionsPage: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="favorite-questions-page" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ marginBottom: '24px' }}>
         <Title level={2}>
           <HeartFilled style={{ color: '#ff4d4f', marginRight: '8px' }} />
@@ -229,6 +229,7 @@ const FavoriteQuestionsPage: React.FC = () => {
              currentQuestion.visualsSvgContent !== 'null' &&
              currentQuestion.visualsSvgContent.trim() !== '' && (
               <div
+                className="question-visual"
                 style={{
                   textAlign: 'center',
                   margin: '20px 0',
@@ -394,4 +395,3 @@ const FavoriteQuestionsPage: React.FC = () => {
 };
 
 export default FavoriteQuestionsPage;
-

@@ -123,7 +123,7 @@ const MathRenderer: React.FC<MathRendererProps> = ({ text, className = '' }) => 
   return (
     <div 
       ref={containerRef}
-      className={className}
+      className={`math-renderer ${className}`.trim()}
       style={{
         lineHeight: '1.6'
       }}

@@ -79,7 +79,7 @@ const DictionaryPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', marginTop: '120px' }}>
+    <div className="dictionary-page" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', marginTop: '120px' }}>
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <Title level={1} style={{ color: '#1890ff', marginBottom: '8px' }}>
           <BookOutlined style={{ marginRight: '12px' }} />
@@ -101,6 +101,7 @@ const DictionaryPage: React.FC = () => {
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div style={{ textAlign: 'center' }}>
             <Search
+              className="dictionary-search"
               placeholder="Enter a word to look up..."
               value={searchWord}
               maxLength={225}

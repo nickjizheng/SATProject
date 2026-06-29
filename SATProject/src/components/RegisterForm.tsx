@@ -315,7 +315,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
             ]}
             style={{ marginBottom: '32px' }}
           >
-            <Row gutter={12}>
+            <Row gutter={[12, 12]} className="verification-code-row">
               <Col flex="auto">
                 <Input
                   prefix={<SafetyOutlined style={{ color: '#0f766e' }} />}

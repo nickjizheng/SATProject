@@ -115,7 +115,7 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
   };
 
   return (
-    <div style={{
+    <div className="sat-question-card" style={{
       width: '100%',
       minHeight: '600px',
       padding: '24px',
@@ -154,6 +154,7 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
        question.visualsSvgContent !== 'null' &&
        question.visualsSvgContent.trim() !== '' && (
         <div
+          className="question-visual"
           style={{
             textAlign: 'center',
             margin: '24px 0',
@@ -240,7 +241,7 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
                   ...getOptionStyle(option.key),
                 }}
               >
-                <Space style={{ width: '100%' }}>
+                <Space className="question-option-content" style={{ width: '100%' }}>
                   <Text strong style={{
                     fontSize: '16px',
                     color: selectedAnswer === option.key ? '#1890ff' : '#262626',

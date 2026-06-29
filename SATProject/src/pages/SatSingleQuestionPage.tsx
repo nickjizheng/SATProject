@@ -145,7 +145,7 @@ const SatSingleQuestionPage: React.FC = () => {
   };
 
   return (
-    <div style={{
+    <div className="practice-page single-question-page" style={{
       minHeight: '100vh',
       background: '#f5f5f5',
       padding: '24px'
@@ -185,14 +185,15 @@ const SatSingleQuestionPage: React.FC = () => {
                 onClick={loadNextQuestion}
                 loading={loading}
                 size="large"
-                style={{ width: '100%', marginTop: '28px', height: '32px', fontSize: '16px', borderRadius: '8px' }}
+                className="practice-start-button"
+                style={{ width: '100%', marginTop: '28px', height: '48px', fontSize: '16px', borderRadius: '8px' }}
               >
                 Shuffle Question
               </Button>
             </Col>
             <Col xs={24} sm={14} md={8}>
-              <div style={{ textAlign: 'right' }}>
-                <Space>
+              <div className="practice-stats" style={{ textAlign: 'right' }}>
+                <Space wrap>
                   <Statistic
                     title="Accuracy"
                     value={answerSummary.accuracy}

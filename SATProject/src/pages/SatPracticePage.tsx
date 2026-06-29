@@ -166,7 +166,7 @@ const SatPracticePage: React.FC = () => {
   const progressPercent = questions.length > 0 ? Math.round(((currentQuestionIndex + 1) / questions.length) * 100) : 0;
 
   return (
-    <div style={{
+    <div className="practice-page" style={{
       minHeight: '100vh',
       background: '#f5f5f5',
       padding: '24px'
@@ -227,14 +227,15 @@ const SatPracticePage: React.FC = () => {
                 onClick={loadQuestions}
                 loading={loading}
                 size="large"
-                style={{ width: '100%', marginTop: '28px', height: '32px', fontSize: '16px', borderRadius: '8px' }}
+                className="practice-start-button"
+                style={{ width: '100%', marginTop: '28px', height: '48px', fontSize: '16px', borderRadius: '8px' }}
               >
                 Start Practice
               </Button>
             </Col>
             <Col xs={24} sm={24} md={6}>
-              <div style={{ textAlign: 'right' }}>
-                <Space>
+              <div className="practice-stats" style={{ textAlign: 'right' }}>
+                <Space wrap>
                   <Statistic
                     title="Accuracy"
                     value={answerSummary.accuracy}
@@ -290,7 +291,7 @@ const SatPracticePage: React.FC = () => {
                 </Col>
                 <Col xs={24} sm={12} md={8}>
                   <div style={{ textAlign: 'center' }}>
-                    <Space>
+                    <Space wrap className="question-navigation-actions">
                       <Button
                         icon={<LeftOutlined />}
                         onClick={handlePrevQuestion}

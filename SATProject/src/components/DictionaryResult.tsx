@@ -132,7 +132,7 @@ const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
               borderRadius: '8px',
               border: '1px solid #e6f7ff'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="dictionary-result-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Title level={2} style={{
                   margin: 0,
                   color: '#1890ff',
@@ -159,7 +159,7 @@ const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
                   }}
                 />
               </div>
-              <Space size="middle" style={{ marginTop: '12px' }}>
+              <Space wrap size="middle" className="dictionary-pronunciation-row" style={{ marginTop: '12px' }}>
                 {entry.fl && (
                   <Tag
                     color="blue"
@@ -193,7 +193,8 @@ const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
                     loading={playingAudio === audioName}
                     onClick={() => audioName && void playPronunciation(audioName)}
                     title={audioName ? 'Play pronunciation' : 'No pronunciation audio available'}
-                    style={{ height: '38px', borderRadius: '8px' }}
+                    className="dictionary-audio-button"
+                    style={{ minHeight: '44px', height: 'auto', borderRadius: '8px' }}
                   >
                     <Text code style={{
                       fontSize: '16px',

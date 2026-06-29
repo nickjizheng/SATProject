@@ -90,7 +90,7 @@ const FavoriteWordsPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', marginTop: '120px' }}>
+    <div className="favorite-words-page" style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', marginTop: '120px' }}>
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <Title level={1} style={{ color: '#ff4d4f', marginBottom: '8px' }}>
           <HeartFilled style={{ marginRight: '12px' }} />
@@ -173,6 +173,7 @@ const FavoriteWordsPage: React.FC = () => {
                   </div>
 
                   <Button
+                    className="favorite-word-remove"
                     type="text"
                     danger
                     icon={<DeleteOutlined />}

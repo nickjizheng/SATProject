@@ -109,20 +109,20 @@ export default function LandingPage() {
         <AnimatePresence>
           {mobileMenu && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-stone-900/10 bg-[#f6f2e8] md:hidden">
-              <div className="space-y-2 p-5"><a href="#experience" className="block p-2 font-bold">Try it</a><a href="#features" className="block p-2 font-bold">Features</a><a href="#workflow" className="block p-2 font-bold">How it works</a><a href="#about" className="block p-2 font-bold">About</a><Button className="mt-3 w-full" onClick={() => navigate('/auth?mode=register')}>Create account</Button></div>
+              <div className="space-y-2 p-5"><a href="#experience" className="block p-2 font-bold">Try it</a><a href="#features" className="block p-2 font-bold">Features</a><a href="#workflow" className="block p-2 font-bold">How it works</a><a href="#about" className="block p-2 font-bold">About</a><div className="grid grid-cols-2 gap-2 pt-3"><Button variant="secondary" onClick={() => navigate('/auth?mode=login')}>Log in</Button><Button onClick={() => navigate('/auth?mode=register')}>Create account</Button></div></div>
             </motion.div>
           )}
         </AnimatePresence>
       </header>
 
       <main>
-        <section className="relative mx-auto grid min-h-[760px] max-w-[1440px] items-center gap-14 px-5 py-20 sm:px-8 lg:grid-cols-[1.03fr_.97fr] lg:px-14 lg:py-28">
+        <section className="relative mx-auto grid min-h-0 max-w-[1440px] items-center gap-14 px-5 py-14 sm:min-h-[760px] sm:px-8 sm:py-20 lg:grid-cols-[1.03fr_.97fr] lg:px-14 lg:py-28">
           <div className="absolute left-[42%] top-10 -z-0 size-[32rem] rounded-full bg-teal-700/[.07] blur-3xl" />
           <motion.div initial={{ opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7 }} className="relative z-10">
             <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.18em] text-[#c34f38]"><Sparkles size={14} /> SAT preparation with a memory</p>
-            <h1 className="mt-6 max-w-4xl font-display text-[clamp(4rem,8vw,7.8rem)] font-medium leading-[.82] tracking-[-.06em]">Practise.<br /><em className="font-light text-teal-800">Understand.</em><br />Improve.</h1>
+            <h1 className="mt-6 max-w-4xl font-display text-[clamp(3.35rem,17vw,4rem)] font-medium leading-[.86] tracking-[-.055em] sm:text-[clamp(4rem,8vw,7.8rem)] sm:leading-[.82] sm:tracking-[-.06em]">Practise.<br /><em className="font-light text-teal-800">Understand.</em><br />Improve.</h1>
             <p className="mt-9 max-w-xl text-lg leading-8 text-stone-600">SAT-Buddy brings question practice, answer feedback, progress analytics and vocabulary tools into one calm workspace, so every session builds on the last.</p>
-            <div className="mt-9 flex flex-wrap gap-3"><Button size="lg" onClick={() => document.querySelector('#experience')?.scrollIntoView({ behavior: 'smooth' })}>Try a sample question <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=login')}>I already have an account</Button></div>
+            <div className="marketing-hero-actions mt-9 flex flex-wrap gap-3"><Button size="lg" onClick={() => document.querySelector('#experience')?.scrollIntoView({ behavior: 'smooth' })}>Try a sample question <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=login')}>I already have an account</Button></div>
             <div className="mt-10 flex flex-wrap gap-6 text-xs font-bold uppercase tracking-wider text-stone-500"><span className="flex items-center gap-2"><Check size={15} className="text-teal-700" /> Free to explore</span><span className="flex items-center gap-2"><Check size={15} className="text-teal-700" /> No login for the demo</span></div>
           </motion.div>
 
@@ -141,7 +141,7 @@ export default function LandingPage() {
 
         <section id="experience" className="bg-[#e9e3d5] px-5 py-24 sm:px-8 lg:py-32">
           <div className="mx-auto grid max-w-[1280px] gap-14 lg:grid-cols-[.72fr_1.28fr] lg:items-center">
-            <div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#c34f38]">Experience it first</p><h2 className="mt-4 font-display text-5xl font-medium leading-none tracking-[-.04em] sm:text-6xl">Try the feedback loop.</h2><p className="mt-6 max-w-md leading-7 text-stone-600">Choose an answer and submit it. This miniature demo uses no account or saved data, but shows the same clear marking pattern used in the full practice experience.</p><div className="mt-8 space-y-3 text-sm text-stone-600"><p className="flex gap-3"><CheckCircle2 size={19} className="shrink-0 text-teal-700" /> Immediate correct or incorrect state</p><p className="flex gap-3"><CheckCircle2 size={19} className="shrink-0 text-teal-700" /> Correct answer and concise reasoning</p></div></div>
+            <div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#c34f38]">Experience it first</p><h2 className="mt-4 font-display text-4xl font-medium leading-none tracking-[-.04em] sm:text-6xl">Try the feedback loop.</h2><p className="mt-6 max-w-md leading-7 text-stone-600">Choose an answer and submit it. This miniature demo uses no account or saved data, but shows the same clear marking pattern used in the full practice experience.</p><div className="mt-8 space-y-3 text-sm text-stone-600"><p className="flex gap-3"><CheckCircle2 size={19} className="shrink-0 text-teal-700" /> Immediate correct or incorrect state</p><p className="flex gap-3"><CheckCircle2 size={19} className="shrink-0 text-teal-700" /> Correct answer and concise reasoning</p></div></div>
 
             <Card className="p-6 sm:p-9">
               <div className="flex flex-wrap items-center justify-between gap-3"><span className="rounded-full bg-teal-800/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-teal-800">Advanced Math · Sample</span><span className="text-xs font-bold text-stone-400">Question 1 of 1</span></div>
@@ -162,7 +162,7 @@ export default function LandingPage() {
         </section>
 
         <section id="features" className="mx-auto max-w-[1440px] px-5 py-24 sm:px-8 lg:px-14 lg:py-32">
-          <div className="max-w-3xl"><p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#c34f38]">Everything in one place</p><h2 className="mt-4 font-display text-5xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Tools that work <em className="font-light text-teal-800">together.</em></h2><p className="mt-6 text-lg leading-8 text-stone-600">Each feature is useful alone. The real advantage is that they share one account, one answer history and one picture of your progress.</p></div>
+          <div className="max-w-3xl"><p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#c34f38]">Everything in one place</p><h2 className="mt-4 font-display text-4xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Tools that work <em className="font-light text-teal-800">together.</em></h2><p className="mt-6 text-lg leading-8 text-stone-600">Each feature is useful alone. The real advantage is that they share one account, one answer history and one picture of your progress.</p></div>
           <div className="mt-14 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {capabilities.map(({ icon: Icon, number, title, copy, detail }, index) => <motion.article key={title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ delay: index * .05 }}><Card className="group h-full p-6 hover:-translate-y-1"><div className="flex items-center justify-between"><span className="grid size-12 place-items-center rounded-2xl bg-[#173c39] text-[#f4d8cc]"><Icon size={21} /></span><span className="font-display text-2xl text-stone-300">{number}</span></div><h3 className="mt-8 font-display text-2xl font-semibold tracking-tight">{title}</h3><p className="mt-3 text-sm leading-6 text-stone-600">{copy}</p><p className="mt-5 border-t border-stone-900/10 pt-5 text-xs leading-5 text-stone-500">{detail}</p></Card></motion.article>)}
           </div>
@@ -176,7 +176,7 @@ export default function LandingPage() {
           <div className="mx-auto grid max-w-[1280px] items-center gap-12 lg:grid-cols-[.8fr_1.2fr]">
             <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#c34f38]">The student behind SAT-Buddy</p>
-              <h2 className="mt-4 font-display text-5xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Built from the study desk, <em className="font-light text-teal-800">not a boardroom.</em></h2>
+              <h2 className="mt-4 font-display text-4xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Built from the study desk, <em className="font-light text-teal-800">not a boardroom.</em></h2>
             </motion.div>
             <Card className="overflow-hidden p-7 sm:p-10">
               <div className="flex flex-col gap-8 sm:flex-row sm:items-center">
@@ -185,14 +185,14 @@ export default function LandingPage() {
                   <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.16em] text-[#e07a5f]"><GraduationCap size={16} /> Founder & student developer</div>
                   <h3 className="mt-3 font-display text-4xl font-semibold tracking-tight">Nick Jizheng Li</h3>
                   <p className="mt-4 max-w-xl text-sm leading-7 text-stone-600">SAT-Buddy was designed and built to make practice feel more connected, encouraging and useful. The aim is simple: every answer should help a student decide what to do next.</p>
-                  <a href="mailto:nick.jizheng.li@gmail.com" className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#123d3a]/8 px-4 py-2 text-sm font-bold text-[#123d3a] transition-colors hover:bg-[#123d3a]/14"><Mail size={16} /> nick.jizheng.li@gmail.com</a>
+                  <a href="mailto:nick.jizheng.li@gmail.com" className="mt-6 inline-flex max-w-full items-center gap-2 break-all rounded-2xl bg-[#123d3a]/8 px-4 py-2 text-sm font-bold text-[#123d3a] transition-colors hover:bg-[#123d3a]/14 sm:rounded-full sm:break-normal"><Mail size={16} className="shrink-0" /> nick.jizheng.li@gmail.com</a>
                 </div>
               </div>
             </Card>
           </div>
         </section>
 
-        <section className="px-5 py-24 sm:px-8 lg:py-32"><Card className="mx-auto max-w-[1280px] overflow-hidden bg-[#e96b4d] p-8 text-white sm:p-14"><div className="grid items-end gap-8 lg:grid-cols-[1fr_auto]"><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-white/60">Ready when you are</p><h2 className="mt-4 max-w-3xl font-display text-5xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Turn the next question into useful progress.</h2><p className="mt-6 max-w-xl text-white/70">Create an account to save attempts, synchronize practice modes and build your personal SAT study library.</p></div><div className="flex flex-wrap gap-3"><Button size="lg" className="bg-[#173c39] hover:bg-[#24534f]" onClick={() => navigate('/auth?mode=register')}>Create my account <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=login')}>Log in</Button></div></div></Card></section>
+        <section className="px-5 py-24 sm:px-8 lg:py-32"><Card className="mx-auto max-w-[1280px] overflow-hidden bg-[#e96b4d] p-8 text-white sm:p-14"><div className="grid items-end gap-8 lg:grid-cols-[1fr_auto]"><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-white/60">Ready when you are</p><h2 className="mt-4 max-w-3xl font-display text-4xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Turn the next question into useful progress.</h2><p className="mt-6 max-w-xl text-white/70">Create an account to save attempts, synchronize practice modes and build your personal SAT study library.</p></div><div className="marketing-cta-actions flex flex-wrap gap-3"><Button size="lg" className="bg-[#173c39] hover:bg-[#24534f]" onClick={() => navigate('/auth?mode=register')}>Create my account <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=login')}>Log in</Button></div></div></Card></section>
       </main>
 
       <footer className="border-t border-stone-900/10 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-4 text-xs text-stone-500 sm:flex-row"><span className="font-bold text-stone-700">SAT-Buddy · By students, for students.</span><a href="mailto:nick.jizheng.li@gmail.com" className="hover:text-[#123d3a]">Nick Jizheng Li · nick.jizheng.li@gmail.com</a></div></footer>

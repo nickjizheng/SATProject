@@ -19,7 +19,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="auth-canvas relative min-h-screen overflow-hidden bg-[#173c39] px-5 py-6 sm:px-8">
+    <div className="auth-canvas relative min-h-screen overflow-hidden bg-[#173c39] px-3 py-4 sm:px-8 sm:py-6">
       <div className="absolute -left-40 -top-40 size-[34rem] rounded-full border-[5rem] border-white/[.035]" />
       <div className="absolute -bottom-52 right-[-8rem] size-[38rem] rounded-full bg-[#e96b4d]/15 blur-3xl" />
       <div className="relative mx-auto grid min-h-[calc(100vh-3rem)] max-w-[1440px] items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">

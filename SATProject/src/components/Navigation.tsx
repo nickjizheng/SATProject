@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   BookOpenText,
   ChartNoAxesCombined,
@@ -9,6 +9,7 @@ import {
   CircleUserRound,
   Heart,
   Home,
+  MoreHorizontal,
   Search,
   Sparkles,
   Star,
@@ -33,11 +34,21 @@ const navItems = [
   { path: '/favorite-questions', label: 'Saved questions', icon: Star },
 ];
 
+const mobilePrimaryItems = [
+  { ...navItems[0], mobileLabel: 'Home' },
+  { ...navItems[1], mobileLabel: 'Progress' },
+  { ...navItems[2], mobileLabel: 'Practice' },
+  { ...navItems[3], mobileLabel: 'Quick' },
+];
+
+const mobileMoreItems = navItems.slice(4);
+
 export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [userInfo, setUserInfo] = useState<AccountUser | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [displayName, setDisplayName] = useState(() => getUserPreferences().displayName);
 
   useEffect(() => {
@@ -62,13 +73,18 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
     navigate('/auth?mode=login');
   };
 
+  const navigateFromMobile = (path: string) => {
+    setMobileMoreOpen(false);
+    navigate(path);
+  };
+
   return (
     <>
     <motion.aside
       initial={false}
       animate={{ width: collapsed ? 88 : 272 }}
       transition={{ type: 'spring', stiffness: 310, damping: 30 }}
-      className="fixed inset-y-0 left-0 z-50 hidden border-r border-stone-900/10 bg-[#173c39] text-white shadow-[18px_0_60px_rgba(26,48,45,.12)] md:flex md:flex-col"
+      className="fixed inset-y-0 left-0 z-50 hidden border-r border-stone-900/10 bg-[#173c39] text-white shadow-[18px_0_60px_rgba(26,48,45,.12)] lg:flex lg:flex-col"
     >
       <button onClick={() => navigate('/home')} className="flex h-24 w-full items-center gap-3 px-6 text-left">
         <Brand compact={collapsed} inverse />
@@ -120,20 +136,81 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
       </button>
     </motion.aside>
 
-    <nav className="fixed inset-x-3 bottom-3 z-50 flex h-16 items-center gap-1 overflow-x-auto rounded-[1.35rem] border border-white/10 bg-[#173c39]/95 px-2 text-white shadow-[0_18px_55px_rgba(23,60,57,.28)] backdrop-blur-xl md:hidden">
-      {navItems.map(({ path, label, icon: Icon }) => {
+    <AnimatePresence>
+      {mobileMoreOpen && (
+        <>
+          <motion.button
+            type="button"
+            aria-label="Close more navigation"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMobileMoreOpen(false)}
+            className="fixed inset-0 z-40 bg-stone-950/25 backdrop-blur-[2px] lg:hidden"
+          />
+          <motion.div
+            role="dialog"
+            aria-label="More navigation"
+            initial={{ opacity: 0, y: 18, scale: .98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: .98 }}
+            className="mobile-more-panel fixed inset-x-3 z-50 rounded-[1.5rem] border border-stone-900/10 bg-[#fffdf8]/96 p-3 text-[#173c39] shadow-[0_24px_70px_rgba(23,60,57,.28)] backdrop-blur-xl lg:hidden"
+          >
+            <div className="grid grid-cols-2 gap-2">
+              {mobileMoreItems.map(({ path, label, icon: Icon }) => {
+                const active = location.pathname === path;
+                return (
+                  <button
+                    type="button"
+                    key={path}
+                    onClick={() => navigateFromMobile(path)}
+                    className={cn('flex min-h-12 items-center gap-2 rounded-xl px-3 text-left text-xs font-extrabold', active ? 'bg-[#173c39] text-white' : 'bg-stone-900/5')}
+                  >
+                    <Icon size={18} className="shrink-0" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMoreOpen(false);
+                  setAccountOpen(true);
+                }}
+                className="col-span-2 flex min-h-12 items-center gap-2 rounded-xl bg-[#e6d8bb]/45 px-3 text-left text-xs font-extrabold"
+              >
+                <CircleUserRound size={18} />
+                Profile & settings
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+
+    <nav className="mobile-nav fixed inset-x-3 z-50 grid h-16 grid-cols-5 items-center gap-1 rounded-[1.35rem] border border-white/10 bg-[#173c39]/95 px-2 text-white shadow-[0_18px_55px_rgba(23,60,57,.28)] backdrop-blur-xl lg:hidden">
+      {mobilePrimaryItems.map(({ path, mobileLabel, icon: Icon }) => {
         const active = location.pathname === path;
         return (
           <button
             key={path}
-            onClick={() => navigate(path)}
-            className={cn('flex min-w-[68px] flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[9px] font-bold', active ? 'bg-[#f5f2e9] text-[#173c39]' : 'text-white/60')}
+            onClick={() => navigateFromMobile(path)}
+            className={cn('flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[9px] font-bold', active ? 'bg-[#f5f2e9] text-[#173c39]' : 'text-white/60')}
           >
             <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
-            <span className="whitespace-nowrap">{label.replace(' question', '')}</span>
+            <span className="max-w-full truncate">{mobileLabel}</span>
           </button>
         );
       })}
+      <button
+        type="button"
+        onClick={() => setMobileMoreOpen(value => !value)}
+        aria-expanded={mobileMoreOpen}
+        className={cn('flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl py-2 text-[9px] font-bold', mobileMoreItems.some(item => item.path === location.pathname) || mobileMoreOpen ? 'bg-[#f5f2e9] text-[#173c39]' : 'text-white/60')}
+      >
+        <MoreHorizontal size={18} />
+        <span>More</span>
+      </button>
     </nav>
     <AccountModal
       open={accountOpen}

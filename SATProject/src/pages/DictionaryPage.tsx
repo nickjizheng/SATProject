@@ -16,18 +16,25 @@ const DictionaryPage: React.FC = () => {
   const [hasSearched, setHasSearched] = useState(false);
 
   const handleSearch = async (word: string) => {
-    if (!word.trim()) {
+    const normalizedWord = word.trim();
+
+    if (!normalizedWord) {
       message.warning('Please enter a word to search');
+      return;
+    }
+
+    if (normalizedWord.length > 225) {
+      message.error('Search terms cannot exceed 225 characters.');
       return;
     }
 
     setLoading(true);
     setHasSearched(true);
-    
+
     try {
-      const data = await DictionaryService.getWordDefinition(word.trim());
+      const data = await DictionaryService.getWordDefinition(normalizedWord);
       setResults(data);
-      
+
       if (data.length === 0) {
         message.info('No definition found for this word');
       } else {
@@ -65,7 +72,7 @@ const DictionaryPage: React.FC = () => {
       </div>
 
       {/* Search Section */}
-      <Card style={{ 
+      <Card style={{
         marginBottom: '24px',
         borderRadius: '12px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
@@ -77,14 +84,16 @@ const DictionaryPage: React.FC = () => {
             <Search
               placeholder="Enter a word to look up..."
               value={searchWord}
+              maxLength={225}
               onChange={handleInputChange}
               onSearch={handleSearch}
               onKeyPress={handleKeyPress}
               enterButton={
-                <Button 
-                  type="primary" 
-                  icon={<SearchOutlined />} 
+                <Button
+                  type="primary"
+                  icon={<SearchOutlined />}
                   loading={loading}
+                  disabled={!searchWord.trim() || loading}
                   style={{
                     background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
                     border: 'none',
@@ -96,14 +105,14 @@ const DictionaryPage: React.FC = () => {
                 </Button>
               }
               size="large"
-              style={{ 
-                maxWidth: '600px', 
+              style={{
+                maxWidth: '600px',
                 width: '100%',
                 borderRadius: '8px'
               }}
             />
           </div>
-          
+
           <div style={{ textAlign: 'center' }}>
             <Text type="secondary" style={{ fontSize: '16px' }}>
               Try searching for words like: <Text code>voluminous</Text>, <Text code>serendipity</Text>, <Text code>ubiquitous</Text>
@@ -144,17 +153,17 @@ const DictionaryPage: React.FC = () => {
 
       {/* Initial State */}
       {!loading && !hasSearched && (
-        <Card style={{ 
-          textAlign: 'center', 
+        <Card style={{
+          textAlign: 'center',
           padding: '60px 40px',
           borderRadius: '12px',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
           border: '1px solid #f0f0f0',
           background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)'
         }}>
-          <BookOutlined style={{ 
-            fontSize: '64px', 
-            color: '#1890ff', 
+          <BookOutlined style={{
+            fontSize: '64px',
+            color: '#1890ff',
             marginBottom: '24px',
             filter: 'drop-shadow(0 2px 4px rgba(24, 144, 255, 0.2))'
           }} />

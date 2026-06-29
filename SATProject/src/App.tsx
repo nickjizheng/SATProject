@@ -1,6 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ConfigProvider, Layout } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
+import enUS from 'antd/locale/en_US';
 import { useState } from 'react';
 import Navigation from './components/Navigation';
 import AuthGuard from './components/AuthGuard';
@@ -18,18 +18,18 @@ import './App.css';
 
 const { Content } = Layout;
 
-function App() {
+function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/auth';
 
   return (
-    <ConfigProvider locale={zhCN}>
-      <Router>
-        <div className="App">
-          <Layout style={{ minHeight: '100vh' }}>
-            <Navigation collapsed={collapsed} onCollapse={setCollapsed} />
-            <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
-              <Content style={{ 
-                margin: 0, 
+    <div className="App">
+      <Layout style={{ minHeight: '100vh' }}>
+        <Navigation collapsed={collapsed} onCollapse={setCollapsed} />
+        <Layout style={{ marginLeft: isAuthPage ? 0 : collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
+              <Content style={{
+                margin: 0,
                 padding: 0,
                 background: '#f5f5f5',
                 minHeight: '100vh'
@@ -38,7 +38,7 @@ function App() {
                   {/* 默认重定向到登录页面 */}
                   <Route path="/" element={<Navigate to="/auth?mode=login" replace />} />
                   <Route path="/auth" element={<AuthPage />} />
-                  
+
                   {/* 需要登录的页面 */}
                   <Route path="/home" element={
                     <AuthGuard>
@@ -85,14 +85,22 @@ function App() {
                       <FavoriteQuestionsPage />
                     </AuthGuard>
                   } />
-                  
+
                   {/* 404重定向到登录页面 */}
                   <Route path="*" element={<Navigate to="/auth?mode=login" replace />} />
                 </Routes>
               </Content>
-            </Layout>
-          </Layout>
-        </div>
+        </Layout>
+      </Layout>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ConfigProvider locale={enUS}>
+      <Router>
+        <AppLayout />
       </Router>
     </ConfigProvider>
   );

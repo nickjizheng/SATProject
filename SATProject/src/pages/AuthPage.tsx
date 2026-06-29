@@ -37,8 +37,8 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <Layout style={{ 
-      height: 'calc(100vh - 80px)', 
+    <Layout style={{
+      minHeight: '100vh',
       width: '100vw',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       position: 'relative',
@@ -58,7 +58,7 @@ const AuthPage: React.FC = () => {
         `,
         pointerEvents: 'none'
       }} />
-      
+
       <Content style={{
         height: '100%',
         display: 'flex',
@@ -68,13 +68,13 @@ const AuthPage: React.FC = () => {
       }}>
         <div className="animate-fade-in-up">
           {isLogin ? (
-            <LoginForm 
-              onSuccess={handleAuthSuccess} 
+            <LoginForm
+              onSuccess={handleAuthSuccess}
               onSwitchToRegister={switchToRegister}
             />
           ) : (
-            <RegisterForm 
-              onSuccess={handleAuthSuccess} 
+            <RegisterForm
+              onSuccess={handleAuthSuccess}
               onSwitchToLogin={switchToLogin}
             />
           )}

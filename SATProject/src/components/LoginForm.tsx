@@ -29,22 +29,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
           email: response.data.email,
           emailVerified: response.data.emailVerified
         }));
-        
+
         message.success({
-          content: '登录成功！欢迎回来',
+          content: 'Login successful. Welcome back.',
           duration: 2,
           style: {
             marginTop: '20vh',
           },
         });
-        
+
         // 延迟跳转，让用户看到成功消息
         setTimeout(() => {
           onSuccess(response.data);
         }, 1000);
       } else {
         message.error({
-          content: response.message || '登录失败，请检查用户名和密码',
+          content: response.message || 'Login failed. Check your username and password.',
           duration: 3,
           style: {
             marginTop: '20vh',
@@ -52,19 +52,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
         });
       }
     } catch (err: any) {
-      console.error('登录错误:', err);
-      let errorMessage = '登录失败，请检查网络连接';
-      
+      console.error('Login error:', err);
+      let errorMessage = 'Login failed. Check your network connection.';
+
       if (err.response?.status === 401) {
-        errorMessage = '用户名或密码错误';
+        errorMessage = 'Incorrect username or password.';
       } else if (err.response?.status === 403) {
-        errorMessage = '账户已被禁用，请联系管理员';
+        errorMessage = 'This account has been disabled.';
       } else if (err.response?.status === 429) {
-        errorMessage = '登录尝试过于频繁，请稍后再试';
+        errorMessage = 'Too many login attempts. Please try again later.';
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
-      
+
       message.error({
         content: errorMessage,
         duration: 4,
@@ -78,10 +78,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
   };
 
   return (
-    <Card 
+    <Card
       className="animate-fade-in-scale shadow-elevated"
-      style={{ 
-        width: 480, 
+      style={{
+        width: 480,
         margin: '0 auto',
         borderRadius: '20px',
         border: 'none',
@@ -90,27 +90,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
     >
       <Space direction="vertical" size="large" style={{ width: '100%', padding: '8px' }}>
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <Title 
-            level={2} 
+          <Title
+            level={2}
             className="gradient-text"
-            style={{ 
-              margin: 0, 
+            style={{
+              margin: 0,
               fontSize: '2rem',
               fontWeight: 700,
               letterSpacing: '-0.01em'
             }}
           >
-            用户登录
+            Log In
           </Title>
-          <Text 
-            type="secondary" 
-            style={{ 
+          <Text
+            type="secondary"
+            style={{
               fontSize: '1rem',
               fontWeight: 400,
               color: '#666'
             }}
           >
-            欢迎回来，请登录您的账户
+            Welcome back. Sign in to your account.
           </Text>
         </div>
 
@@ -124,14 +124,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
           <Form.Item
             name="usernameOrEmail"
             rules={[
-              { required: true, message: '请输入用户名或邮箱' },
-              { min: 3, message: '用户名至少3个字符' }
+              { required: true, message: 'Please enter your username or email.' },
+              { min: 3, message: 'Username must be at least 3 characters.' }
             ]}
             style={{ marginBottom: '24px' }}
           >
             <Input
               prefix={<UserOutlined style={{ color: '#1890ff' }} />}
-              placeholder="用户名或邮箱"
+              placeholder="Username or email"
               style={{
                 height: '48px',
                 borderRadius: '12px',
@@ -143,14 +143,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
           <Form.Item
             name="password"
             rules={[
-              { required: true, message: '请输入密码' },
-              { min: 6, message: '密码至少6个字符' }
+              { required: true, message: 'Please enter your password.' },
+              { min: 6, message: 'Password must be at least 6 characters.' }
             ]}
             style={{ marginBottom: '32px' }}
           >
             <Input.Password
               prefix={<LockOutlined style={{ color: '#1890ff' }} />}
-              placeholder="密码"
+              placeholder="Password"
               style={{
                 height: '48px',
                 borderRadius: '12px',
@@ -176,24 +176,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
                 boxShadow: '0 6px 16px rgba(24, 144, 255, 0.3)'
               }}
             >
-              {loading ? '登录中...' : '登录'}
+              {loading ? 'Logging in...' : 'Log In'}
             </Button>
           </Form.Item>
         </Form>
 
         <div style={{ textAlign: 'center', paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
           <Text type="secondary" style={{ fontSize: '0.95rem' }}>
-            还没有账号？{' '}
-            <Button 
-              type="link" 
-              onClick={onSwitchToRegister} 
-              style={{ 
+            Don't have an account?{' '}
+            <Button
+              type="link"
+              onClick={onSwitchToRegister}
+              style={{
                 padding: 0,
                 fontWeight: 500,
                 color: '#1890ff'
               }}
             >
-              注册并登录
+              Sign up
             </Button>
           </Text>
         </div>

@@ -46,11 +46,11 @@ export class DashboardService {
       const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
-      
+
       if (!token || !user) {
-        throw new Error('用户未登录');
+        throw new Error('User is not logged in.');
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/stats`, {
         method: 'GET',
         headers: {
@@ -58,9 +58,9 @@ export class DashboardService {
           'X-User-Id': user.id.toString(),
         },
       });
-      
+
       const result: ApiResponse<any> = await response.json();
-      
+
       if (result.code === 200 && result.data) {
         // 转换后端数据格式为前端格式
         const backendData = result.data;
@@ -76,10 +76,10 @@ export class DashboardService {
           domainStats: backendData.domainStats || []
         };
       } else {
-        throw new Error(result.message || '获取用户统计失败');
+        throw new Error('Failed to fetch user statistics.');
       }
     } catch (error) {
-      console.error('获取用户统计失败:', error);
+      console.error('Failed to fetch user statistics:', error);
       // 如果API调用失败，返回模拟数据
       return this.getMockUserStats();
     }
@@ -93,11 +93,11 @@ export class DashboardService {
       const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
-      
+
       if (!token || !user) {
-        throw new Error('用户未登录');
+        throw new Error('User is not logged in.');
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/activities?limit=${limit}`, {
         method: 'GET',
         headers: {
@@ -105,9 +105,9 @@ export class DashboardService {
           'X-User-Id': user.id.toString(),
         },
       });
-      
+
       const result: ApiResponse<any[]> = await response.json();
-      
+
       if (result.code === 200 && result.data) {
         // 转换后端数据格式为前端格式
         return result.data.map((item: any) => ({
@@ -118,10 +118,10 @@ export class DashboardService {
           metadata: item.metadata
         }));
       } else {
-        throw new Error(result.message || '获取最近活动失败');
+        throw new Error('Failed to fetch recent activity.');
       }
     } catch (error) {
-      console.error('获取最近活动失败:', error);
+      console.error('Failed to fetch recent activity:', error);
       // 如果API调用失败，返回模拟数据
       return this.getMockRecentActivities();
     }
@@ -135,11 +135,11 @@ export class DashboardService {
       const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
-      
+
       if (!token || !user) {
-        throw new Error('用户未登录');
+        throw new Error('User is not logged in.');
       }
-      
+
       const response = await fetch(`${API_BASE_URL}/progress?days=${days}`, {
         method: 'GET',
         headers: {
@@ -147,9 +147,9 @@ export class DashboardService {
           'X-User-Id': user.id.toString(),
         },
       });
-      
+
       const result: ApiResponse<any[]> = await response.json();
-      
+
       if (result.code === 200 && result.data) {
         // 转换后端数据格式为前端格式
         return result.data.map((item: any) => ({
@@ -159,10 +159,10 @@ export class DashboardService {
           studyTime: item.studyTime || 0
         }));
       } else {
-        throw new Error(result.message || '获取学习进度失败');
+        throw new Error('Failed to fetch study progress.');
       }
     } catch (error) {
-      console.error('获取学习进度失败:', error);
+      console.error('Failed to fetch study progress:', error);
       // 如果API调用失败，返回模拟数据
       return this.getMockStudyProgress();
     }
@@ -216,35 +216,35 @@ export class DashboardService {
       {
         id: 1,
         type: 'question_answered',
-        description: '完成了数学题目 #1234',
+        description: 'Completed Math question #1234',
         timestamp: new Date(now.getTime() - 5 * 60 * 1000).toISOString(),
         metadata: { questionId: 1234, correct: true }
       },
       {
         id: 2,
         type: 'favorite_added',
-        description: '收藏了单词 "serendipity"',
+        description: 'Saved the word "serendipity"',
         timestamp: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
         metadata: { word: 'serendipity' }
       },
       {
         id: 3,
         type: 'question_answered',
-        description: '完成了阅读题目 #1233',
+        description: 'Completed Reading question #1233',
         timestamp: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
         metadata: { questionId: 1233, correct: false }
       },
       {
         id: 4,
         type: 'favorite_added',
-        description: '收藏了题目 #1232',
+        description: 'Saved question #1232',
         timestamp: new Date(now.getTime() - 45 * 60 * 1000).toISOString(),
         metadata: { questionId: 1232 }
       },
       {
         id: 5,
         type: 'login',
-        description: '登录系统',
+        description: 'Logged in',
         timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString()
       }
     ];
@@ -256,7 +256,7 @@ export class DashboardService {
   private static getMockStudyProgress(): StudyProgress[] {
     const data: StudyProgress[] = [];
     const now = new Date();
-    
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       data.push({
@@ -266,7 +266,7 @@ export class DashboardService {
         studyTime: Math.floor(Math.random() * 60) + 15
       });
     }
-    
+
     return data;
   }
 }

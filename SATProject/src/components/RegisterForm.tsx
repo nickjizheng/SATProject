@@ -21,7 +21,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
     const email = form.getFieldValue('email');
     if (!email) {
       message.error({
-        content: '请先输入邮箱地址',
+        content: 'Please enter your email address first.',
         duration: 2,
         style: {
           marginTop: '20vh',
@@ -34,7 +34,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       message.error({
-        content: '请输入有效的邮箱地址',
+        content: 'Please enter a valid email address.',
         duration: 2,
         style: {
           marginTop: '20vh',
@@ -50,7 +50,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
       const response = await authService.sendVerificationCode(request);
       if (response.code === 200) {
         message.success({
-          content: '验证码已发送到您的邮箱，请查收',
+          content: 'The verification code was sent to your email.',
           duration: 3,
           style: {
             marginTop: '20vh',
@@ -68,7 +68,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
         }, 1000);
       } else {
         message.error({
-          content: response.message || '验证码发送失败',
+          content: response.message || 'Failed to send the verification code.',
           duration: 3,
           style: {
             marginTop: '20vh',
@@ -76,17 +76,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
         });
       }
     } catch (err: any) {
-      console.error('发送验证码错误:', err);
-      let errorMessage = '验证码发送失败，请检查网络连接';
-      
+      console.error('Verification code error:', err);
+      let errorMessage = 'Failed to send the verification code. Check your connection.';
+
       if (err.response?.status === 400) {
-        errorMessage = '邮箱格式不正确';
+        errorMessage = 'The email address is invalid.';
       } else if (err.response?.status === 429) {
-        errorMessage = '发送过于频繁，请稍后再试';
+        errorMessage = 'Please wait before requesting another code.';
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
-      
+
       message.error({
         content: errorMessage,
         duration: 4,
@@ -114,22 +114,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
           email: response.data.email,
           emailVerified: response.data.emailVerified
         }));
-        
+
         message.success({
-          content: '注册成功！已自动登录，欢迎加入我们',
+          content: 'Registration successful. You are now logged in.',
           duration: 2,
           style: {
             marginTop: '20vh',
           },
         });
-        
+
         // 延迟跳转，让用户看到成功消息
         setTimeout(() => {
           onSuccess(response.data);
         }, 1000);
       } else {
         message.error({
-          content: response.message || '注册失败，请检查输入信息',
+          content: response.message || 'Registration failed. Check your information.',
           duration: 3,
           style: {
             marginTop: '20vh',
@@ -137,25 +137,25 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
         });
       }
     } catch (err: any) {
-      console.error('注册错误:', err);
-      let errorMessage = '注册失败，请检查网络连接';
-      
+      console.error('Registration error:', err);
+      let errorMessage = 'Registration failed. Check your network connection.';
+
       if (err.response?.status === 400) {
         if (err.response.data?.message?.includes('用户名')) {
-          errorMessage = '用户名已存在，请选择其他用户名';
+          errorMessage = 'That username is already taken.';
         } else if (err.response.data?.message?.includes('邮箱')) {
-          errorMessage = '邮箱已被注册，请使用其他邮箱';
+          errorMessage = 'That email address is already registered.';
         } else if (err.response.data?.message?.includes('验证码')) {
-          errorMessage = '验证码错误或已过期，请重新获取';
+          errorMessage = 'The verification code is incorrect or expired.';
         } else {
-          errorMessage = err.response.data.message || '输入信息有误，请检查后重试';
+          errorMessage = err.response.data.message || 'Check your information and try again.';
         }
       } else if (err.response?.status === 429) {
-        errorMessage = '注册请求过于频繁，请稍后再试';
+        errorMessage = 'Too many registration attempts. Please try again later.';
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
-      
+
       message.error({
         content: errorMessage,
         duration: 4,
@@ -169,10 +169,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
   };
 
   return (
-    <Card 
+    <Card
       className="animate-fade-in-scale shadow-elevated"
-      style={{ 
-        width: 480, 
+      style={{
+        width: 480,
         margin: '0 auto',
         borderRadius: '20px',
         border: 'none',
@@ -181,27 +181,27 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
     >
       <Space direction="vertical" size="large" style={{ width: '100%', padding: '8px' }}>
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <Title 
-            level={2} 
+          <Title
+            level={2}
             className="gradient-text"
-            style={{ 
-              margin: 0, 
+            style={{
+              margin: 0,
               fontSize: '2rem',
               fontWeight: 700,
               letterSpacing: '-0.01em'
             }}
           >
-            注册并登录
+            Sign Up
           </Title>
-          <Text 
-            type="secondary" 
-            style={{ 
+          <Text
+            type="secondary"
+            style={{
               fontSize: '1rem',
               fontWeight: 400,
               color: '#666'
             }}
           >
-            创建新账户，立即开始使用
+            Create an account and start practicing.
           </Text>
         </div>
 
@@ -216,14 +216,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
           <Form.Item
             name="username"
             rules={[
-              { required: true, message: '请输入用户名' },
-              { min: 3, max: 50, message: '用户名长度必须在3-50个字符之间' }
+              { required: true, message: 'Please enter a username.' },
+              { min: 3, max: 50, message: 'Username must be 3-50 characters.' }
             ]}
             style={{ marginBottom: '20px' }}
           >
             <Input
               prefix={<UserOutlined style={{ color: '#1890ff' }} />}
-              placeholder="用户名（3-50个字符）"
+              placeholder="Username (3-50 characters)"
               style={{
                 height: '48px',
                 borderRadius: '12px',
@@ -235,14 +235,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
           <Form.Item
             name="email"
             rules={[
-              { required: true, message: '请输入邮箱' },
-              { type: 'email', message: '请输入有效的邮箱地址' }
+              { required: true, message: 'Please enter your email.' },
+              { type: 'email', message: 'Please enter a valid email address.' }
             ]}
             style={{ marginBottom: '20px' }}
           >
             <Input
               prefix={<MailOutlined style={{ color: '#1890ff' }} />}
-              placeholder="邮箱地址"
+              placeholder="Email address"
               style={{
                 height: '48px',
                 borderRadius: '12px',
@@ -254,14 +254,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
           <Form.Item
             name="password"
             rules={[
-              { required: true, message: '请输入密码' },
-              { min: 6, max: 20, message: '密码长度必须在6-20个字符之间' }
+              { required: true, message: 'Please enter a password.' },
+              { min: 6, max: 20, message: 'Password must be 6-20 characters.' }
             ]}
             style={{ marginBottom: '20px' }}
           >
             <Input.Password
               prefix={<LockOutlined style={{ color: '#1890ff' }} />}
-              placeholder="密码（6-20个字符）"
+              placeholder="Password (6-20 characters)"
               style={{
                 height: '48px',
                 borderRadius: '12px',
@@ -273,8 +273,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
           <Form.Item
             name="verificationCode"
             rules={[
-              { required: true, message: '请输入验证码' },
-              { len: 6, message: '验证码必须是6位数字' }
+              { required: true, message: 'Please enter the verification code.' },
+              { len: 6, message: 'The verification code must contain 6 digits.' }
             ]}
             style={{ marginBottom: '32px' }}
           >
@@ -282,7 +282,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
               <Col flex="auto">
                 <Input
                   prefix={<SafetyOutlined style={{ color: '#1890ff' }} />}
-                  placeholder="6位验证码"
+                  placeholder="6-digit verification code"
                   maxLength={6}
                   style={{
                     height: '48px',
@@ -296,7 +296,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
                   onClick={sendVerificationCode}
                   loading={codeLoading}
                   disabled={countdown > 0}
-                  style={{ 
+                  style={{
                     width: '100%',
                     height: '48px',
                     borderRadius: '12px',
@@ -307,7 +307,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
                     boxShadow: countdown > 0 ? 'none' : '0 4px 12px rgba(82, 196, 26, 0.3)'
                   }}
                 >
-                  {codeLoading ? '发送中...' : countdown > 0 ? `${countdown}s` : '发送验证码'}
+                  {codeLoading ? 'Sending...' : countdown > 0 ? `${countdown}s` : 'Send Code'}
                 </Button>
               </Col>
             </Row>
@@ -330,24 +330,24 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchToLogin 
                 boxShadow: '0 6px 16px rgba(24, 144, 255, 0.3)'
               }}
             >
-              {loading ? '注册并登录中...' : '注册并登录'}
+              {loading ? 'Creating account...' : 'Sign Up'}
             </Button>
           </Form.Item>
         </Form>
 
         <div style={{ textAlign: 'center', paddingTop: '16px', borderTop: '1px solid #f0f0f0' }}>
           <Text type="secondary" style={{ fontSize: '0.95rem' }}>
-            已有账号？{' '}
-            <Button 
-              type="link" 
-              onClick={onSwitchToLogin} 
-              style={{ 
+            Already have an account?{' '}
+            <Button
+              type="link"
+              onClick={onSwitchToLogin}
+              style={{
                 padding: 0,
                 fontWeight: 500,
                 color: '#1890ff'
               }}
             >
-              直接登录
+              Log in
             </Button>
           </Text>
         </div>

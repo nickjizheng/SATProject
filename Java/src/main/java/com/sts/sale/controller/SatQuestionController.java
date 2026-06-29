@@ -15,10 +15,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/sat")
 public class SatQuestionController {
-    
+
     @Autowired
     private SatQuestionService satQuestionService;
-    
+
     /**
      * 获取随机题目
      * @param count 题目数量，默认10道
@@ -26,16 +26,18 @@ public class SatQuestionController {
      */
     @GetMapping(value = "/questions/random", produces = "application/json")
     public ApiResponse<List<SatQuestionResponse>> getRandomQuestions(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
             @RequestParam(defaultValue = "10") int count) {
         try {
-            List<SatQuestionResponse> questions = satQuestionService.getRandomQuestions(count);
+            Integer userId = parseOptionalUserId(userIdHeader);
+            List<SatQuestionResponse> questions = satQuestionService.getRandomQuestions(count, userId);
             return ApiResponse.success("获取题目成功", questions);
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("获取题目失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 根据领域获取题目
      * @param domain 题目领域
@@ -44,17 +46,19 @@ public class SatQuestionController {
      */
     @GetMapping(value = "/questions/domain/{domain}", produces = "application/json")
     public ApiResponse<List<SatQuestionResponse>> getQuestionsByDomain(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
             @PathVariable String domain,
             @RequestParam(defaultValue = "10") int count) {
         try {
-            List<SatQuestionResponse> questions = satQuestionService.getQuestionsByDomain(domain, count);
+            Integer userId = parseOptionalUserId(userIdHeader);
+            List<SatQuestionResponse> questions = satQuestionService.getQuestionsByDomain(domain, count, userId);
             return ApiResponse.success("获取题目成功", questions);
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("获取题目失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 获取所有领域
      * @return 领域列表
@@ -69,7 +73,7 @@ public class SatQuestionController {
             return ApiResponse.error("获取领域失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 根据ID获取题目
      * @param id 题目ID
@@ -88,7 +92,7 @@ public class SatQuestionController {
             return ApiResponse.error("获取题目失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 提交答案
      * @param request 答题请求
@@ -104,23 +108,26 @@ public class SatQuestionController {
             return ApiResponse.error("答题失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 获取下一道未做过的题目
      * @param request 请求参数
      * @return 下一题响应
      */
     @PostMapping(value = "/next-question", produces = "application/json")
-    public ApiResponse<NextQuestionResponse> getNextQuestion(@Valid @RequestBody NextQuestionRequest request) {
+    public ApiResponse<NextQuestionResponse> getNextQuestion(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @Valid @RequestBody NextQuestionRequest request) {
         try {
-            NextQuestionResponse response = satQuestionService.getNextQuestion(request);
+            Integer userId = parseOptionalUserId(userIdHeader);
+            NextQuestionResponse response = satQuestionService.getNextQuestion(request, userId);
             return ApiResponse.success("获取题目成功", response);
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("获取题目失败: " + e.getMessage());
         }
     }
-    
+
     /**
      * 提交答案并记录
      * @param request 答题请求
@@ -132,17 +139,7 @@ public class SatQuestionController {
             @Valid @RequestBody AnswerRequest request,
             HttpServletRequest httpRequest) {
         try {
-            // 从请求头获取用户ID
-            String userIdStr = httpRequest.getHeader("X-User-Id");
-            Integer userId = null;
-            if (userIdStr != null && !userIdStr.trim().isEmpty()) {
-                try {
-                    userId = Integer.parseInt(userIdStr);
-                } catch (NumberFormatException e) {
-                    return ApiResponse.error("用户ID格式错误");
-                }
-            }
-            
+            Integer userId = parseOptionalUserId(httpRequest.getHeader("X-User-Id"));
             AnswerResponse response = satQuestionService.submitAnswerWithRecord(request, userId);
             return ApiResponse.success("答题完成", response);
         } catch (Exception e) {
@@ -150,7 +147,25 @@ public class SatQuestionController {
             return ApiResponse.error("答题失败: " + e.getMessage());
         }
     }
-    
+
+    /**
+     * Retrieves the latest persisted attempt for a question.
+     */
+    @GetMapping(value = "/answer-record/{questionId}", produces = "application/json")
+    public ApiResponse<AnswerResponse> getRecordedAnswer(
+            @PathVariable Integer questionId,
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @RequestParam(required = false) String sessionId) {
+        try {
+            Integer userId = parseOptionalUserId(userIdHeader);
+            AnswerResponse response = satQuestionService.getRecordedAnswer(questionId, userId, sessionId);
+            return ApiResponse.success("答题记录获取成功", response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ApiResponse.error("答题记录获取失败: " + e.getMessage());
+        }
+    }
+
     /**
      * 生成新的会话ID
      * @return 会话ID
@@ -163,6 +178,18 @@ public class SatQuestionController {
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("创建会话失败: " + e.getMessage());
+        }
+    }
+
+    private Integer parseOptionalUserId(String userIdHeader) {
+        if (userIdHeader == null || userIdHeader.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(userIdHeader);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("用户ID格式错误");
         }
     }
 }

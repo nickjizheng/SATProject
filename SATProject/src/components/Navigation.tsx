@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Typography, Avatar, Dropdown, Button } from 'antd';
-import { 
-  LoginOutlined, 
-  UserAddOutlined, 
-  BookOutlined, 
-  LogoutOutlined, 
-  UserOutlined, 
-  SearchOutlined, 
-  HeartOutlined, 
+import {
+  LoginOutlined,
+  UserAddOutlined,
+  BookOutlined,
+  LogoutOutlined,
+  UserOutlined,
+  SearchOutlined,
+  HeartOutlined,
   StarOutlined,
   HomeOutlined,
   DashboardOutlined,
@@ -34,13 +34,13 @@ const Navigation: React.FC<NavigationProps> = ({ collapsed, onCollapse }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
-    
+
     if (token && userStr) {
       setIsLoggedIn(true);
       try {
         setUserInfo(JSON.parse(userStr));
       } catch (error) {
-        console.error('用户信息解析失败:', error);
+        console.error('Failed to parse user information:', error);
         // 清除无效的用户信息
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -109,13 +109,13 @@ const Navigation: React.FC<NavigationProps> = ({ collapsed, onCollapse }) => {
         {
           key: '/auth?mode=login',
           icon: <LoginOutlined />,
-          label: '登录',
+          label: 'Log in',
           onClick: handleLoginClick
         },
         {
           key: '/auth?mode=register',
           icon: <UserAddOutlined />,
-          label: '注册',
+          label: 'Sign up',
           onClick: handleRegisterClick
         }
       ];
@@ -125,43 +125,43 @@ const Navigation: React.FC<NavigationProps> = ({ collapsed, onCollapse }) => {
       {
         key: '/home',
         icon: <HomeOutlined />,
-        label: '首页',
+        label: 'Home',
         onClick: () => navigate('/home')
       },
       {
         key: '/dashboard',
         icon: <DashboardOutlined />,
-        label: '仪表板',
+        label: 'Dashboard',
         onClick: () => navigate('/dashboard')
       },
       {
         key: '/sat-practice',
         icon: <BookOutlined />,
-        label: 'SAT 练习',
+        label: 'SAT Practice',
         onClick: handleSatPracticeClick
       },
       {
         key: '/sat-single',
         icon: <BookOutlined />,
-        label: '单题模式',
+        label: 'Single Question',
         onClick: handleSatSingleClick
       },
       {
         key: '/dictionary',
         icon: <SearchOutlined />,
-        label: '词典',
+        label: 'Dictionary',
         onClick: handleDictionaryClick
       },
       {
         key: '/favorite-words',
         icon: <HeartOutlined />,
-        label: '收藏单词',
+        label: 'Saved Words',
         onClick: handleFavoriteWordsClick
       },
       {
         key: '/favorite-questions',
         icon: <StarOutlined />,
-        label: '收藏题目',
+        label: 'Saved Questions',
         onClick: handleFavoriteQuestionsClick
       }
     ];
@@ -171,11 +171,11 @@ const Navigation: React.FC<NavigationProps> = ({ collapsed, onCollapse }) => {
   const userMenu = (
     <Menu>
       <Menu.Item key="profile" icon={<UserOutlined />}>
-        个人资料
+        Profile
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
-        退出登录
+        Log out
       </Menu.Item>
     </Menu>
   );
@@ -206,10 +206,10 @@ const Navigation: React.FC<NavigationProps> = ({ collapsed, onCollapse }) => {
         padding: '0 16px'
       }}>
         {collapsed ? (
-          <Title 
-            level={4} 
-            style={{ 
-              margin: 0, 
+          <Title
+            level={4}
+            style={{
+              margin: 0,
               color: '#1890ff',
               cursor: 'pointer'
             }}
@@ -218,10 +218,10 @@ const Navigation: React.FC<NavigationProps> = ({ collapsed, onCollapse }) => {
             SAT
           </Title>
         ) : (
-          <Title 
-            level={3} 
-            style={{ 
-              margin: 0, 
+          <Title
+            level={3}
+            style={{
+              margin: 0,
               color: '#1890ff',
               cursor: 'pointer',
               fontSize: '1.2rem'
@@ -242,10 +242,10 @@ const Navigation: React.FC<NavigationProps> = ({ collapsed, onCollapse }) => {
         }}>
           <Dropdown overlay={userMenu} placement="topCenter">
             <div style={{ cursor: 'pointer' }}>
-              <Avatar 
-                size={collapsed ? 32 : 40} 
+              <Avatar
+                size={collapsed ? 32 : 40}
                 icon={<UserOutlined />}
-                style={{ 
+                style={{
                   background: '#1890ff',
                   marginBottom: collapsed ? 0 : 8
                 }}

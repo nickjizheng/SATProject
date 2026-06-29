@@ -19,38 +19,50 @@ import java.util.stream.Collectors;
  */
 @Service
 public class SatQuestionService {
-    
+
     @Autowired
     private SatQuestionMapper satQuestionMapper;
-    
+
     @Autowired
     private UserAnswerRecordMapper userAnswerRecordMapper;
-    
+
     /**
      * 获取随机题目
      * @param count 题目数量
      * @return 题目列表
      */
-    public List<SatQuestionResponse> getRandomQuestions(int count) {
-        List<SatQuestion> questions = satQuestionMapper.getRandomQuestions(count);
+    public List<SatQuestionResponse> getRandomQuestions(int count, Integer userId) {
+        List<SatQuestion> questions;
+        if (userId != null) {
+            questions = userAnswerRecordMapper.getUnansweredQuestionsForUser(userId, null, count);
+        } else {
+            questions = satQuestionMapper.getRandomQuestions(count);
+        }
+
         return questions.stream()
                 .map(SatQuestionResponse::fromSatQuestion)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * 根据领域获取题目
      * @param domain 题目领域
      * @param count 题目数量
      * @return 题目列表
      */
-    public List<SatQuestionResponse> getQuestionsByDomain(String domain, int count) {
-        List<SatQuestion> questions = satQuestionMapper.getQuestionsByDomain(domain, count);
+    public List<SatQuestionResponse> getQuestionsByDomain(String domain, int count, Integer userId) {
+        List<SatQuestion> questions;
+        if (userId != null) {
+            questions = userAnswerRecordMapper.getUnansweredQuestionsForUser(userId, domain, count);
+        } else {
+            questions = satQuestionMapper.getQuestionsByDomain(domain, count);
+        }
+
         return questions.stream()
                 .map(SatQuestionResponse::fromSatQuestion)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * 获取所有领域
      * @return 领域列表
@@ -60,7 +72,7 @@ public class SatQuestionService {
         System.out.println("从数据库获取到的领域: " + domains);
         return domains;
     }
-    
+
     /**
      * 根据ID获取题目
      * @param id 题目ID
@@ -73,64 +85,71 @@ public class SatQuestionService {
         }
         return SatQuestionResponse.fromSatQuestion(question);
     }
-    
+
     /**
-     * 验证答案
-     * @param request 答题请求
-     * @return 答题响应
+     * Marks a submitted answer against the authoritative answer key.
+     * @param request the submitted question ID and answer
+     * @return the marking result shown to the student
      */
     public AnswerResponse checkAnswer(AnswerRequest request) {
+        // Load the full question so marking always uses the server-side answer key.
         SatQuestion question = satQuestionMapper.selectById(request.getQuestionId());
         if (question == null) {
             throw new RuntimeException("题目不存在");
         }
-        
+
         AnswerResponse response = new AnswerResponse();
         response.setQuestionId(request.getQuestionId());
         response.setUserAnswer(request.getAnswer());
-        
-        // 从数据库获取正确答案
-        String correctAnswer = question.getCorrectAnswer();
-        if (correctAnswer == null || correctAnswer.trim().isEmpty()) {
-            // 如果数据库中没有正确答案，使用临时逻辑
-            correctAnswer = determineCorrectAnswer(question);
+
+        String correctAnswer = getVerifiedAnswerKey(question);
+        String submittedAnswer = request.getAnswer().trim().toUpperCase();
+        if (!submittedAnswer.matches("[A-D]")) {
+            throw new IllegalArgumentException("Answer must be A, B, C, or D.");
         }
-        
+
+        // Use one comparison result for both the response and persisted attempt.
         response.setCorrectAnswer(correctAnswer);
-        response.setIsCorrect(correctAnswer.equalsIgnoreCase(request.getAnswer()));
+        response.setUserAnswer(submittedAnswer);
+        response.setIsCorrect(correctAnswer.equals(submittedAnswer));
         response.setExplanation(question.getQuestionExplanation());
-        
+
         return response;
     }
-    
-    /**
-     * 确定正确答案（临时实现）
-     * 当数据库中没有正确答案时使用
-     */
-    private String determineCorrectAnswer(SatQuestion question) {
-        // 这里是一个临时的实现，实际应用中应该从数据库获取正确答案
-        // 可以根据题目ID或其他逻辑来确定正确答案
-        // 为了演示，我们随机返回一个答案
-        String[] answers = {"A", "B", "C", "D"};
-        int index = question.getId() % 4;
-        return answers[index];
+
+    private String getVerifiedAnswerKey(SatQuestion question) {
+        String answerKey = question.getCorrectAnswer();
+        if (answerKey == null || !answerKey.trim().toUpperCase().matches("[A-D]")) {
+            throw new IllegalStateException(
+                "This question does not have a verified answer key and cannot be scored."
+            );
+        }
+        return answerKey.trim().toUpperCase();
     }
-    
+
     /**
      * 获取下一道未做过的题目
      * @param request 请求参数
      * @return 下一题响应
      */
-    public NextQuestionResponse getNextQuestion(NextQuestionRequest request) {
-        // 获取未做过的题目
-        List<SatQuestion> unansweredQuestions = userAnswerRecordMapper.getUnansweredQuestions(
-            request.getSessionId(), 
-            request.getDomain(), 
-            1
-        );
-        
+    public NextQuestionResponse getNextQuestion(NextQuestionRequest request, Integer userId) {
+        List<SatQuestion> unansweredQuestions;
+        if (userId != null) {
+            unansweredQuestions = userAnswerRecordMapper.getUnansweredQuestionsForUser(
+                userId,
+                request.getDomain(),
+                1
+            );
+        } else {
+            unansweredQuestions = userAnswerRecordMapper.getUnansweredQuestions(
+                request.getSessionId(),
+                request.getDomain(),
+                1
+            );
+        }
+
         NextQuestionResponse response = new NextQuestionResponse();
-        
+
         if (unansweredQuestions.isEmpty()) {
             // 没有未做过的题目了
             response.setQuestion(null);
@@ -141,46 +160,97 @@ public class SatQuestionService {
             response.setQuestion(SatQuestionResponse.fromSatQuestion(question));
             response.setHasMoreQuestions(true);
         }
-        
-        // 统计已做题目数量
-        List<Integer> answeredIds = userAnswerRecordMapper.getAnsweredQuestionIds(request.getSessionId());
+
+        List<Integer> answeredIds = userId != null
+            ? userAnswerRecordMapper.getAnsweredQuestionIdsByUser(userId)
+            : userAnswerRecordMapper.getAnsweredQuestionIds(request.getSessionId());
         response.setAnsweredCount(answeredIds.size());
-        
+
         // 统计总题目数量
         QueryWrapper<SatQuestion> queryWrapper = new QueryWrapper<>();
+        queryWrapper.apply("UPPER(TRIM(correct_answer)) IN ('A', 'B', 'C', 'D')");
         if (request.getDomain() != null && !request.getDomain().trim().isEmpty()) {
             queryWrapper.eq("domain", request.getDomain());
         }
         Long totalCount = satQuestionMapper.selectCount(queryWrapper);
         response.setTotalCount(totalCount.intValue());
-        
+
         return response;
     }
-    
+
     /**
-     * 提交答案并记录
-     * @param request 答题请求
-     * @param userId 用户ID
-     * @return 答题响应
+     * Marks an answer and records the latest attempt for synchronization.
+     * @param request the submitted answer and optional practice session
+     * @param userId the authenticated student, or null for an anonymous session
+     * @return the marking result shown to the student
      */
     public AnswerResponse submitAnswerWithRecord(AnswerRequest request, Integer userId) {
-        // 验证答案
+        // Mark first so the stored correctness matches the result returned to the UI.
         AnswerResponse answerResponse = checkAnswer(request);
-        
-        // 记录答题记录
-        UserAnswerRecord record = new UserAnswerRecord();
-        record.setUserId(userId); // 使用用户ID而不是sessionId
-        record.setQuestionId(request.getQuestionId());
+
+        // Reuse the account/session record so repeat attempts update instead of duplicate.
+        UserAnswerRecord record = findExistingAnswerRecord(request, userId);
+        boolean isNewRecord = record == null;
+
+        if (isNewRecord) {
+            record = new UserAnswerRecord();
+            record.setQuestionId(request.getQuestionId());
+        }
+
+        // Persist the owner, selected answer, result, timestamp, and practice session.
+        record.setUserId(userId);
         record.setUserAnswer(request.getAnswer());
         record.setIsCorrect(answerResponse.getIsCorrect());
         record.setAnsweredAt(LocalDateTime.now());
-        record.setSessionId(request.getSessionId()); // 保留sessionId作为备用
-        
-        userAnswerRecordMapper.insert(record);
-        
+        record.setSessionId(request.getSessionId());
+
+        // Insert a first attempt or update the shared record used by both practice modes.
+        if (isNewRecord) {
+            userAnswerRecordMapper.insert(record);
+        } else {
+            userAnswerRecordMapper.updateById(record);
+        }
+
         return answerResponse;
     }
-    
+
+    /**
+     * Rebuilds the marking response for a previously persisted attempt.
+     */
+    public AnswerResponse getRecordedAnswer(Integer questionId, Integer userId, String sessionId) {
+        UserAnswerRecord record;
+
+        if (userId != null) {
+            record = userAnswerRecordMapper.findLatestByUserIdAndQuestionId(userId, questionId);
+        } else if (sessionId != null && !sessionId.trim().isEmpty()) {
+            record = userAnswerRecordMapper.findLatestBySessionIdAndQuestionId(sessionId, questionId);
+        } else {
+            return null;
+        }
+
+        if (record == null) {
+            return null;
+        }
+
+        AnswerRequest recordedRequest = new AnswerRequest();
+        recordedRequest.setQuestionId(questionId);
+        recordedRequest.setAnswer(record.getUserAnswer());
+        recordedRequest.setSessionId(record.getSessionId());
+        return checkAnswer(recordedRequest);
+    }
+
+    private UserAnswerRecord findExistingAnswerRecord(AnswerRequest request, Integer userId) {
+        if (userId != null) {
+            return userAnswerRecordMapper.findLatestByUserIdAndQuestionId(userId, request.getQuestionId());
+        }
+
+        if (request.getSessionId() != null && !request.getSessionId().trim().isEmpty()) {
+            return userAnswerRecordMapper.findLatestBySessionIdAndQuestionId(request.getSessionId(), request.getQuestionId());
+        }
+
+        return null;
+    }
+
     /**
      * 生成新的会话ID
      * @return 会话ID

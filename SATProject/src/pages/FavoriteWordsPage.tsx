@@ -20,8 +20,8 @@ const FavoriteWordsPage: React.FC = () => {
       const words = await FavoriteWordService.getFavoriteWords();
       setFavoriteWords(words);
     } catch (error) {
-      console.error('加载收藏单词失败:', error);
-      message.error('加载收藏单词失败');
+      console.error('Failed to load favorite words:', error);
+      message.error('Failed to load favorite words.');
     } finally {
       setLoading(false);
     }
@@ -32,17 +32,17 @@ const FavoriteWordsPage: React.FC = () => {
     try {
       await FavoriteWordService.removeFavoriteWord(word);
       setFavoriteWords(prev => prev.filter(item => item.id !== id));
-      message.success('已取消收藏');
+      message.success('Removed from favorites.');
     } catch (error) {
-      console.error('取消收藏失败:', error);
-      message.error('取消收藏失败');
+      console.error('Failed to remove favorite word:', error);
+      message.error('Failed to remove favorite word.');
     } finally {
       setDeletingId(null);
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('zh-CN', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -56,23 +56,23 @@ const FavoriteWordsPage: React.FC = () => {
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <Title level={1} style={{ color: '#ff4d4f', marginBottom: '8px' }}>
           <HeartFilled style={{ marginRight: '12px' }} />
-          我收藏的单词
+          My Favorite Words
         </Title>
         <Text type="secondary" style={{ fontSize: '16px' }}>
-          管理您收藏的单词，随时复习
+          Review and manage the words you have saved.
         </Text>
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '50px' }}>
           <Spin size="large" />
-          <div style={{ marginTop: '16px' }}>加载收藏单词中...</div>
+          <div style={{ marginTop: '16px' }}>Loading favorite words...</div>
         </div>
       ) : favoriteWords.length === 0 ? (
         <Card style={{ textAlign: 'center', padding: '60px 40px' }}>
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="还没有收藏任何单词"
+            description="You have not saved any words yet."
           />
         </Card>
       ) : (
@@ -88,34 +88,34 @@ const FavoriteWordsPage: React.FC = () => {
                   border: '1px solid #f0f0f0'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                      <Title level={3} style={{ margin: 0, marginRight: '16px', color: '#1890ff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', marginBottom: '12px' }}>
+                      <Title level={3} style={{ margin: 0, color: '#1890ff', overflowWrap: 'anywhere' }}>
                         {item.word}
                       </Title>
-                      <Space>
+                      <Space wrap>
                         {item.partOfSpeech && (
                           <Tag color="blue" style={{ fontSize: '12px' }}>
                             {item.partOfSpeech}
                           </Tag>
                         )}
                         {item.pronunciation && (
-                          <Space size="small" style={{ 
+                          <Space size="small" style={{
                             background: '#fafafa',
                             padding: '4px 8px',
                             borderRadius: '4px',
                             border: '1px solid #e8e8e8'
                           }}>
                             <SoundOutlined style={{ color: '#52c41a', fontSize: '12px' }} />
-                            <Text code style={{ fontSize: '12px' }}>
+                            <Text code style={{ fontSize: '12px', overflowWrap: 'anywhere' }}>
                               {item.pronunciation}
                             </Text>
                           </Space>
                         )}
                       </Space>
                     </div>
-                    
+
                     {item.shortDefinition && (
                       <div style={{ marginBottom: '12px' }}>
                         <Text style={{ fontSize: '15px', lineHeight: '1.6' }}>
@@ -123,15 +123,15 @@ const FavoriteWordsPage: React.FC = () => {
                         </Text>
                       </div>
                     )}
-                    
+
                     <div style={{ display: 'flex', alignItems: 'center', color: '#666' }}>
                       <CalendarOutlined style={{ marginRight: '4px', fontSize: '12px' }} />
                       <Text style={{ fontSize: '12px' }}>
-                        收藏于 {formatDate(item.createdAt)}
+                        Saved on {formatDate(item.createdAt)}
                       </Text>
                     </div>
                   </div>
-                  
+
                   <Button
                     type="text"
                     danger
@@ -143,7 +143,7 @@ const FavoriteWordsPage: React.FC = () => {
                       flexShrink: 0
                     }}
                   >
-                    取消收藏
+                    Remove
                   </Button>
                 </div>
               </Card>

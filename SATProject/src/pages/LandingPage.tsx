@@ -32,9 +32,9 @@ const capabilities = [
   {
     icon: Zap,
     number: '02',
-    title: 'Quick-question mode',
-    copy: 'Use a lighter, one-question-at-a-time flow when you only have a few minutes or want a fast daily study habit.',
-    detail: 'It shares the same answer history as full practice mode, keeping your progress synchronized.',
+    title: 'Daily quick practice',
+    copy: 'Open one random unanswered question from any SAT domain when you only have a few minutes or want a fast daily study habit.',
+    detail: 'It shares answer history with full practice mode, so quick sessions never recycle work you have already completed.',
   },
   {
     icon: BarChart3,

@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Select, Spin, message, Typography, Space, Progress, Alert, Row, Col, Statistic } from 'antd';
+import { Card, Button, Spin, message, Typography, Space, Progress, Alert, Row, Col, Statistic, Tag } from 'antd';
 import { ReloadOutlined, RightOutlined, TrophyOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import type { SatQuestion, AnswerResponse, NextQuestionResponse } from '../types/sat';
 import { SatService } from '../services/satService';
 import SatQuestionCard from '../components/SatQuestionCard';
-import { getDomainDisplayName } from '../utils/domainMapping';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 const SatSingleQuestionPage: React.FC = () => {
   const [currentQuestion, setCurrentQuestion] = useState<SatQuestion | null>(null);
@@ -15,8 +13,6 @@ const SatSingleQuestionPage: React.FC = () => {
   const [answerResult, setAnswerResult] = useState<AnswerResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
-  const [domains, setDomains] = useState<string[]>([]);
-  const [selectedDomain, setSelectedDomain] = useState<string>('');
   const [questionStats, setQuestionStats] = useState({
     answeredCount: 0,
     totalCount: 0,
@@ -36,26 +32,16 @@ const SatSingleQuestionPage: React.FC = () => {
     }
   }, [sessionId]);
 
-  // Reload questions when domain changes
+  // Load a random unanswered question when the session is ready.
   useEffect(() => {
     if (sessionId) {
       loadNextQuestion();
     }
-  }, [sessionId, selectedDomain]);
+  }, [sessionId]);
 
   useEffect(() => {
-    loadDomains();
     loadAnswerSummary();
   }, []);
-
-  const loadDomains = async () => {
-    try {
-      setDomains(await SatService.getAllDomains());
-    } catch (error) {
-      console.error('Failed to load domains:', error);
-      message.error('Failed to load available domains.');
-    }
-  };
 
   const loadAnswerSummary = async () => {
     try {
@@ -87,8 +73,7 @@ const SatSingleQuestionPage: React.FC = () => {
 
     try {
       const response: NextQuestionResponse = await SatService.getNextQuestion({
-        sessionId,
-        domain: selectedDomain || undefined
+        sessionId
       });
 
       console.log('Get next question response:', response);
@@ -159,19 +144,6 @@ const SatSingleQuestionPage: React.FC = () => {
     }
   };
 
-  const handleRestart = () => {
-    setQuestionStats({
-      answeredCount: 0,
-      totalCount: 0,
-      hasMoreQuestions: true
-    });
-    setCurrentQuestion(null);
-    setSelectedAnswer('');
-    setAnswerResult(null);
-    setShowAnswer(false);
-    setSessionId('');
-  };
-
   const progressPercent = questionStats.totalCount > 0
     ? Math.round((questionStats.answeredCount / questionStats.totalCount) * 100)
     : 0;
@@ -185,9 +157,9 @@ const SatSingleQuestionPage: React.FC = () => {
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* 页面标题 */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>SAT Single Question Mode</Title>
+          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>Daily Quick Practice</Title>
           <Text type="secondary" style={{ fontSize: '16px' }}>
-            Practice one question at a time and track your progress.
+            Jump into one random unanswered question from the full SAT bank.
           </Text>
         </div>
 
@@ -200,34 +172,29 @@ const SatSingleQuestionPage: React.FC = () => {
           }}
         >
           <Row gutter={[24, 16]} align="middle">
-            <Col xs={24} sm={12} md={8}>
-              <div>
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Domain</Text>
-                <Select
-                  style={{ width: '100%' }}
-                  placeholder="All domains"
-                  value={selectedDomain}
-                  onChange={setSelectedDomain}
-                  allowClear
-                >
-                  {domains.map(domain => (
-                    <Option key={domain} value={domain}>{getDomainDisplayName(domain)}</Option>
-                  ))}
-                </Select>
+            <Col xs={24} md={10}>
+              <div style={{ paddingTop: '6px' }}>
+                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Your mixed daily queue</Text>
+                <Space wrap>
+                  <Tag color="cyan">All domains</Tag>
+                  <Tag color="green">Unanswered only</Tag>
+                  <Tag color="gold">Random order</Tag>
+                </Space>
               </div>
             </Col>
-            <Col xs={24} sm={12} md={8}>
+            <Col xs={24} sm={10} md={6}>
               <Button
                 type="primary"
                 icon={<ReloadOutlined />}
-                onClick={handleRestart}
+                onClick={loadNextQuestion}
+                loading={loading}
                 size="large"
                 style={{ width: '100%', marginTop: '28px', height: '32px', fontSize: '16px', borderRadius: '8px' }}
               >
-                Restart Session
+                Shuffle Question
               </Button>
             </Col>
-            <Col xs={24} sm={24} md={8}>
+            <Col xs={24} sm={14} md={8}>
               <div style={{ textAlign: 'right' }}>
                 <Space>
                   <Statistic
@@ -295,7 +262,7 @@ const SatSingleQuestionPage: React.FC = () => {
               {!questionStats.hasMoreQuestions && (
                 <Alert
                   message="All done!"
-                  description="You have completed all available questions. Restart or choose another domain to continue."
+                  description="You have completed every available question in the mixed queue."
                   type="success"
                   showIcon
                 />

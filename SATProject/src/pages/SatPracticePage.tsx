@@ -176,7 +176,7 @@ const SatPracticePage: React.FC = () => {
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <Title level={2} style={{ margin: 0, color: '#1890ff' }}>SAT Practice Mode</Title>
           <Text type="secondary" style={{ fontSize: '16px' }}>
-            Choose a domain and question count to start practicing.
+            Build a focused set. Questions already answered on your account stay out of new sets.
           </Text>
         </div>
 
@@ -346,6 +346,7 @@ const SatPracticePage: React.FC = () => {
                 onSubmitAnswer={handleSubmitAnswer}
                 answerResult={answerResult}
                 showAnswer={!!answerResult}
+                celebrateOnCorrect={!restoredFromHistory}
               />
             </Card>
           </>

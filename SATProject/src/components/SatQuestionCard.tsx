@@ -4,6 +4,8 @@ import { CheckCircleOutlined, CloseCircleOutlined, HeartOutlined, HeartFilled } 
 import type { SatQuestion, AnswerResponse } from '../types/sat';
 import MathRenderer from './MathRenderer';
 import { FavoriteQuestionService } from '../services/favoriteQuestionService';
+import CorrectAnswerCelebration from './CorrectAnswerCelebration';
+import { playCorrectAnswerChime, prepareFeedbackAudio } from '../utils/feedbackAudio';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -14,6 +16,7 @@ interface SatQuestionCardProps {
   onSubmitAnswer: () => void;
   answerResult: AnswerResponse | null;
   showAnswer?: boolean;
+  celebrateOnCorrect?: boolean;
 }
 
 const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
@@ -23,13 +26,24 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
   onSubmitAnswer,
   answerResult,
   showAnswer = false,
+  celebrateOnCorrect = true,
 }) => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     checkFavoriteStatus();
   }, [question.id]);
+
+  useEffect(() => {
+    if (!showAnswer || !answerResult?.isCorrect || !celebrateOnCorrect) return;
+
+    setShowCelebration(true);
+    playCorrectAnswerChime();
+    const timeout = window.setTimeout(() => setShowCelebration(false), 1700);
+    return () => window.clearTimeout(timeout);
+  }, [answerResult, celebrateOnCorrect, showAnswer]);
 
   const checkFavoriteStatus = async () => {
     try {
@@ -102,8 +116,11 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
     <div style={{
       width: '100%',
       minHeight: '600px',
-      padding: '24px'
+      padding: '24px',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
+      {showCelebration && <CorrectAnswerCelebration />}
       {/* 题目信息头部 */}
       <div style={{
         display: 'flex',
@@ -246,7 +263,10 @@ const SatQuestionCard: React.FC<SatQuestionCardProps> = ({
           <Button
             type="primary"
             size="large"
-            onClick={onSubmitAnswer}
+            onClick={() => {
+              prepareFeedbackAudio();
+              onSubmitAnswer();
+            }}
             disabled={!selectedAnswer}
             style={{
               minWidth: '160px',

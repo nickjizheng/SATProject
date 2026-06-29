@@ -26,7 +26,7 @@ const navItems = [
   { path: '/home', label: 'Home', icon: Home },
   { path: '/dashboard', label: 'Dashboard', icon: ChartNoAxesCombined },
   { path: '/sat-practice', label: 'Practice', icon: BookOpenText },
-  { path: '/sat-single', label: 'Quick question', icon: Sparkles },
+  { path: '/sat-single', label: 'Daily quick', icon: Sparkles },
   { path: '/dictionary', label: 'Dictionary', icon: Search },
   { path: '/favorite-words', label: 'Saved words', icon: Heart },
   { path: '/favorite-questions', label: 'Saved questions', icon: Star },

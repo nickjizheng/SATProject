@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Typography, Space, Tag, Divider, List, Button, message } from 'antd';
 import { SoundOutlined, CalendarOutlined, BookOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons';
 import type { DictionaryResponse } from '../types/dictionary';
@@ -10,15 +10,56 @@ interface DictionaryResultProps {
   data: DictionaryResponse[];
 }
 
+const getPronunciationAudioUrl = (audio: string) => {
+  const normalized = audio.toLowerCase();
+  let directory = normalized.charAt(0);
+
+  if (normalized.startsWith('bix')) directory = 'bix';
+  else if (normalized.startsWith('gg')) directory = 'gg';
+  else if (!/^[a-z]/.test(normalized)) directory = 'number';
+
+  return `https://media.merriam-webster.com/audio/prons/en/us/mp3/${directory}/${encodeURIComponent(audio)}.mp3`;
+};
+
 const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (data && data.length > 0) {
       checkFavoriteStatus();
     }
+
+    return () => {
+      audioRef.current?.pause();
+      audioRef.current = null;
+    };
   }, [data]);
+
+  const playPronunciation = async (audioName: string) => {
+    audioRef.current?.pause();
+
+    const audio = new Audio(getPronunciationAudioUrl(audioName));
+    audioRef.current = audio;
+    setPlayingAudio(audioName);
+
+    const finish = () => {
+      setPlayingAudio(null);
+      if (audioRef.current === audio) audioRef.current = null;
+    };
+    audio.addEventListener('ended', finish, { once: true });
+    audio.addEventListener('error', finish, { once: true });
+
+    try {
+      await audio.play();
+    } catch (error) {
+      finish();
+      console.error('Failed to play pronunciation:', error);
+      message.error('Pronunciation audio could not be played.');
+    }
+  };
 
   const checkFavoriteStatus = async () => {
     if (data && data.length > 0) {
@@ -79,6 +120,9 @@ const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
         if (!entry || !entry.meta || !entry.hwi) {
           return null;
         }
+
+        const pronunciation = entry.hwi.prs?.find(item => item.sound?.audio) ?? entry.hwi.prs?.[0];
+        const audioName = pronunciation?.sound?.audio;
 
         return (
           <Card
@@ -152,22 +196,23 @@ const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
                     {entry.lbs.join(', ')}
                   </Tag>
                 )}
-                {entry.hwi?.prs && entry.hwi.prs.length > 0 && (
-                  <Space size="small" style={{
-                    background: '#fafafa',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid #e8e8e8'
-                  }}>
-                    <SoundOutlined style={{ color: '#52c41a' }} />
+                {pronunciation && (
+                  <Button
+                    icon={<SoundOutlined />}
+                    disabled={!audioName}
+                    loading={playingAudio === audioName}
+                    onClick={() => audioName && void playPronunciation(audioName)}
+                    title={audioName ? 'Play pronunciation' : 'No pronunciation audio available'}
+                    style={{ height: '38px', borderRadius: '8px' }}
+                  >
                     <Text code style={{
                       fontSize: '16px',
                       fontWeight: 500,
                       color: '#262626'
                     }}>
-                      {entry.hwi.prs[0]?.mw}
+                      {pronunciation.mw || 'Pronunciation'}
                     </Text>
-                  </Space>
+                  </Button>
                 )}
               </Space>
             </div>

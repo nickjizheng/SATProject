@@ -34,6 +34,14 @@ public interface SatQuestionMapper extends BaseMapper<SatQuestion> {
      * 获取所有领域列表
      * @return 领域列表
      */
-    @Select("SELECT DISTINCT domain FROM sat_questions WHERE domain IS NOT NULL AND UPPER(TRIM(correct_answer)) IN ('A', 'B', 'C', 'D')")
+    @Select({
+        "SELECT TRIM(domain) AS domain FROM sat_questions",
+        "WHERE domain IS NOT NULL",
+        "AND TRIM(domain) <> ''",
+        "AND UPPER(TRIM(correct_answer)) IN ('A', 'B', 'C', 'D')",
+        "GROUP BY TRIM(domain)",
+        "HAVING COUNT(*) > 0",
+        "ORDER BY TRIM(domain)"
+    })
     List<String> getAllDomains();
 }

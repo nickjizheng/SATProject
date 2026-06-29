@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
   address: 0.0.0.0  # 监听所有网络接口
 
 socketio:
@@ -55,3 +55,16 @@ mybatis:
 google:
   oauth:
     client-id: ${GOOGLE_CLIENT_ID:446311994602-2rtodkte7ldbp4f2qhnpusj8anf09vfg.apps.googleusercontent.com}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:local-development-only-change-before-production-0123456789abcdef}
+
+dictionary:
+  api:
+    key: ${DICTIONARY_API_KEY:}
+    base-url: https://www.dictionaryapi.com/api/v3/references/collegiate/json
+
+app:
+  cors:
+    allowed-origin-patterns: "${APP_ALLOWED_ORIGINS:http://localhost:*,http://127.0.0.1:*,http://192.168.*.*:*}"

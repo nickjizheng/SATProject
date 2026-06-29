@@ -12,6 +12,7 @@ FROM eclipse-temurin:17-jre-alpine
 RUN addgroup -S satbuddy && adduser -S satbuddy -G satbuddy
 WORKDIR /app
 COPY --from=build /app/target/sale-0.0.1-SNAPSHOT.jar app.jar
+RUN mkdir -p /app/logs && chown -R satbuddy:satbuddy /app
 
 ENV PORT=8080
 EXPOSE 8080

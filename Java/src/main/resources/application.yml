@@ -54,7 +54,7 @@ mybatis:
 
 google:
   oauth:
-    client-id: ${GOOGLE_CLIENT_ID:446311994602-2rtodkte7ldbp4f2qhnpusj8anf09vfg.apps.googleusercontent.com}
+    client-id: ${GOOGLE_CLIENT_ID:446311994602-ahi42a5su4um79tefbjt59uomk4e3ka0.apps.googleusercontent.com}
 
 security:
   jwt:

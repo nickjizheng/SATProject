@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Col, Empty, List, message, Progress, Row, Space, Spin, Statistic, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Col, Empty, List, message, Progress, Row, Space, Spin, Statistic, Tag, Typography } from 'antd';
 import {
   BookOutlined,
   CheckCircleOutlined,
@@ -66,9 +66,11 @@ export default function Dashboard() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadDashboardData = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [stats, activities] = await Promise.all([
         DashboardService.getUserStats(),
@@ -78,7 +80,11 @@ export default function Dashboard() {
       setRecentActivities(activities);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-      message.error('Failed to load dashboard data.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load dashboard data.';
+      setUserStats(null);
+      setRecentActivities([]);
+      setLoadError(errorMessage);
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -132,6 +138,17 @@ export default function Dashboard() {
         </div>
         <Button icon={<ReloadOutlined />} onClick={() => void loadDashboardData()}>Refresh</Button>
       </div>
+
+      {loadError && (
+        <Alert
+          className="mb-6"
+          type="error"
+          showIcon
+          message="Dashboard data could not be loaded"
+          description={loadError}
+          action={<Button size="small" onClick={() => void loadDashboardData()}>Retry</Button>}
+        />
+      )}
 
       <Row gutter={[18, 18]} className="mb-6">
         <Col xs={24} sm={12} xl={6}>

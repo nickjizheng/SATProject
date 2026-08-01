@@ -9,7 +9,7 @@ socketio:
 spring:
   sql:
     init:
-      # The cloud database starts empty, so initialise the idempotent auth schema on boot.
+      # Cloud databases start empty, so initialise the complete idempotent schema on boot.
       mode: always
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -70,5 +70,8 @@ dictionary:
     base-url: https://www.dictionaryapi.com/api/v3/references/collegiate/json
 
 app:
+  question-seed:
+    enabled: ${QUESTION_SEED_ENABLED:true}
+    resource: classpath:data/sat-questions.jsonl
   cors:
     allowed-origin-patterns: "${APP_ALLOWED_ORIGINS:http://localhost:*,http://127.0.0.1:*,http://192.168.*.*:*}"

@@ -6,6 +6,7 @@ import com.sts.sale.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -60,7 +61,9 @@ public class DashboardService {
         long totalAnswered = allAnswers.size();
 
         // Count correct answers
-        long correctAnswers = allAnswers.stream().mapToLong(record -> record.getIsCorrect() ? 1 : 0).sum();
+        long correctAnswers = allAnswers.stream()
+                .mapToLong(record -> Boolean.TRUE.equals(record.getIsCorrect()) ? 1 : 0)
+                .sum();
 
         // 获取总题目数
         QueryWrapper<SatQuestion> verifiedQuestionWrapper = new QueryWrapper<>();
@@ -92,7 +95,13 @@ public class DashboardService {
         stats.put("favoriteQuestions", favoriteQuestions);
         stats.put("favoriteWords", favoriteWords);
         stats.put("studyStreak", studyStreak);
-        stats.put("lastStudyDate", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        String lastStudyDate = allAnswers.stream()
+                .map(UserAnswerRecord::getAnsweredAt)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .map(date -> date.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+                .orElse(null);
+        stats.put("lastStudyDate", lastStudyDate);
         stats.put("averageScore", Math.round(averageScore * 10.0) / 10.0);
         stats.put("domainStats", domainStats);
 
@@ -188,19 +197,24 @@ public class DashboardService {
     public List<Map<String, Object>> getStudyProgress(Integer userId, int days) {
         List<Map<String, Object>> progress = new ArrayList<>();
 
-        LocalDateTime endDate = LocalDateTime.now();
-        LocalDateTime startDate = endDate.minusDays(days - 1);
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(days - 1L);
         List<UserAnswerRecord> latestAnswers = getLatestAnswerRecords(userId);
 
         for (int i = 0; i < days; i++) {
-            LocalDateTime currentDate = startDate.plusDays(i);
-            LocalDateTime nextDate = currentDate.plusDays(1);
+            LocalDate currentDate = startDate.plusDays(i);
+            LocalDateTime currentDateStart = currentDate.atStartOfDay();
+            LocalDateTime nextDateStart = currentDate.plusDays(1).atStartOfDay();
 
             List<UserAnswerRecord> dayAnswers = latestAnswers.stream()
-                    .filter(record -> !record.getAnsweredAt().isBefore(currentDate) && record.getAnsweredAt().isBefore(nextDate))
+                    .filter(record -> record.getAnsweredAt() != null)
+                    .filter(record -> !record.getAnsweredAt().isBefore(currentDateStart)
+                            && record.getAnsweredAt().isBefore(nextDateStart))
                     .toList();
             int questionsAnswered = dayAnswers.size();
-            int correctAnswers = (int) dayAnswers.stream().mapToLong(record -> record.getIsCorrect() ? 1 : 0).sum();
+            int correctAnswers = (int) dayAnswers.stream()
+                    .mapToLong(record -> Boolean.TRUE.equals(record.getIsCorrect()) ? 1 : 0)
+                    .sum();
 
             Map<String, Object> dayProgress = new HashMap<>();
             dayProgress.put("date", currentDate.format(DateTimeFormatter.ISO_LOCAL_DATE));
@@ -225,16 +239,24 @@ public class DashboardService {
             return 0;
         }
 
-        // Use a Set to store unique study dates, so repeated records from the same day
-        Set<String> studyDays = new HashSet<>();
-        for (UserAnswerRecord record : records) {
-            // Extracting the date
-            String date = record.getAnsweredAt().toLocalDate().toString();
-            studyDays.add(date);
+        Set<LocalDate> studyDays = new HashSet<>();
+        records.stream()
+                .map(UserAnswerRecord::getAnsweredAt)
+                .filter(Objects::nonNull)
+                .map(LocalDateTime::toLocalDate)
+                .forEach(studyDays::add);
+
+        LocalDate cursor = LocalDate.now();
+        if (!studyDays.contains(cursor)) {
+            cursor = cursor.minusDays(1);
         }
 
-        // Return number of study days.
-        return studyDays.size();
+        int streak = 0;
+        while (studyDays.contains(cursor)) {
+            streak += 1;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
     }
 
     /**
@@ -262,7 +284,9 @@ public class DashboardService {
             }
 
             int answeredQuestions = domainUserAnswers.size();
-            int correctAnswers = (int) domainUserAnswers.stream().mapToLong(record -> record.getIsCorrect() ? 1 : 0).sum();
+            int correctAnswers = (int) domainUserAnswers.stream()
+                    .mapToLong(record -> Boolean.TRUE.equals(record.getIsCorrect()) ? 1 : 0)
+                    .sum();
             double averageScore = answeredQuestions > 0 ? (double) correctAnswers / answeredQuestions * 100 : 0;
 
             Map<String, Object> domainStat = new HashMap<>();

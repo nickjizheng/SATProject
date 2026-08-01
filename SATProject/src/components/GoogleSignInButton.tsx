@@ -4,6 +4,9 @@ import type { AuthResponse } from '../types/auth';
 import { authService } from '../services/authService';
 import { storeAuthSession } from '../utils/authStorage';
 
+const GOOGLE_IDENTITY_SCRIPT = 'https://accounts.google.com/gsi/client';
+const GOOGLE_READY_TIMEOUT_MS = 10_000;
+
 interface GoogleCredentialResponse {
   credential: string;
 }
@@ -47,6 +50,10 @@ function loadGoogleIdentityScript() {
   googleScriptPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>('script[data-google-identity]');
     if (existing) {
+      if (window.google) {
+        resolve();
+        return;
+      }
       existing.addEventListener('load', () => resolve(), { once: true });
       existing.addEventListener('error', () => reject(new Error('Google sign-in could not load.')), { once: true });
       return;
@@ -63,6 +70,27 @@ function loadGoogleIdentityScript() {
   });
 
   return googleScriptPromise;
+}
+
+async function waitForGoogleIdentity() {
+  if (window.google) {
+    return;
+  }
+
+  // Load at page level so Google can initialise before the React sign-in form mounts.
+  const pageScript = document.querySelector<HTMLScriptElement>(`script[src^="${GOOGLE_IDENTITY_SCRIPT}"]`);
+  if (!pageScript) {
+    await loadGoogleIdentityScript();
+  }
+
+  const startedAt = Date.now();
+  while (!window.google && Date.now() - startedAt < GOOGLE_READY_TIMEOUT_MS) {
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+  }
+
+  if (!window.google) {
+    throw new Error('Google sign-in could not load.');
+  }
 }
 
 interface GoogleSignInButtonProps {
@@ -94,7 +122,7 @@ export default function GoogleSignInButton({ onSuccess }: GoogleSignInButtonProp
           return;
         }
 
-        await loadGoogleIdentityScript();
+        await waitForGoogleIdentity();
         if (!active || !window.google || !buttonRef.current) return;
 
         window.google.accounts.id.initialize({

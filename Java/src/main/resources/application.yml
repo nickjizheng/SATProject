@@ -7,6 +7,10 @@ socketio:
   port: 9092
 
 spring:
+  sql:
+    init:
+      # The cloud database starts empty, so initialise the idempotent auth schema on boot.
+      mode: always
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: "${DB_URL:jdbc:mysql://localhost:3306/sat?allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai}"
@@ -54,7 +58,7 @@ mybatis:
 
 google:
   oauth:
-    client-id: ${GOOGLE_CLIENT_ID:446311994602-th14pjlumftbusemgkmfptno6lddmvn5.apps.googleusercontent.com}
+    client-id: ${GOOGLE_CLIENT_ID:334308408179-p265kr9ksio3vh60brfd8dck4p2qej3s.apps.googleusercontent.com}
 
 security:
   jwt:

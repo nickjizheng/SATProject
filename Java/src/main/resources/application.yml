@@ -9,8 +9,9 @@ socketio:
 spring:
   sql:
     init:
-      # Cloud databases start empty, so initialise the complete idempotent schema on boot.
-      mode: always
+      # The managed database may become ready after the web process. The application
+      # performs this idempotent initialization in a retrying background worker.
+      mode: never
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: "${DB_URL:jdbc:mysql://localhost:3306/sat?allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai}"
@@ -70,6 +71,10 @@ dictionary:
     base-url: https://www.dictionaryapi.com/api/v3/references/collegiate/json
 
 app:
+  database-bootstrap:
+    schema-resource: classpath:schema.sql
+    retry-initial-delay-ms: ${DB_BOOTSTRAP_RETRY_INITIAL_DELAY_MS:1000}
+    retry-max-delay-ms: ${DB_BOOTSTRAP_RETRY_MAX_DELAY_MS:30000}
   question-seed:
     enabled: ${QUESTION_SEED_ENABLED:true}
     resource: classpath:data/sat-questions.jsonl

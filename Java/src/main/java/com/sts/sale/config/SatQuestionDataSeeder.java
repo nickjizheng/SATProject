@@ -8,16 +8,25 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.Resource;
+import org.springframework.dao.TransientDataAccessException;
+import org.springframework.jdbc.CannotGetJdbcConnectionException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PreDestroy;
+import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
+import java.sql.SQLTransientException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class SatQuestionDataSeeder implements ApplicationRunner {
@@ -56,28 +65,73 @@ public class SatQuestionDataSeeder implements ApplicationRunner {
         """;
 
     private final JdbcTemplate jdbcTemplate;
+    private final DataSource dataSource;
     private final ObjectMapper objectMapper;
     private final boolean enabled;
     private final Resource seedResource;
+    private final Resource schemaResource;
+    private final long retryInitialDelayMillis;
+    private final long retryMaxDelayMillis;
+    private final AtomicBoolean workerStarted = new AtomicBoolean(false);
+
+    private volatile boolean running = true;
+    private volatile Thread workerThread;
 
     public SatQuestionDataSeeder(
             JdbcTemplate jdbcTemplate,
+            DataSource dataSource,
             ObjectMapper objectMapper,
             @Value("${app.question-seed.enabled:true}") boolean enabled,
-            @Value("${app.question-seed.resource}") Resource seedResource) {
+            @Value("${app.question-seed.resource}") Resource seedResource,
+            @Value("${app.database-bootstrap.schema-resource:classpath:schema.sql}") Resource schemaResource,
+            @Value("${app.database-bootstrap.retry-initial-delay-ms:1000}") long retryInitialDelayMillis,
+            @Value("${app.database-bootstrap.retry-max-delay-ms:30000}") long retryMaxDelayMillis) {
         this.jdbcTemplate = jdbcTemplate;
+        this.dataSource = dataSource;
         this.objectMapper = objectMapper;
         this.enabled = enabled;
         this.seedResource = seedResource;
+        this.schemaResource = schemaResource;
+        this.retryInitialDelayMillis = Math.max(1, retryInitialDelayMillis);
+        this.retryMaxDelayMillis = Math.max(this.retryInitialDelayMillis, retryMaxDelayMillis);
     }
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
-        if (!enabled) {
-            logger.info("SAT question seed is disabled.");
+    public void run(ApplicationArguments args) {
+        if (!workerStarted.compareAndSet(false, true)) {
+            logger.debug("Database bootstrap worker is already running.");
             return;
         }
 
+        Thread thread = new Thread(this::synchronizeWithRetry, "database-bootstrap");
+        thread.setDaemon(true);
+        workerThread = thread;
+        thread.start();
+        logger.info("Database bootstrap scheduled in the background.");
+    }
+
+    /**
+     * Synchronous entry point kept package-private so bootstrap ordering and seed
+     * behavior can be verified without starting a background thread.
+     */
+    void synchronizeOnce() throws Exception {
+        applySchema();
+        if (enabled) {
+            synchronizeSeed();
+        } else {
+            logger.info("SAT question seed is disabled; schema synchronization completed.");
+        }
+    }
+
+    void applySchema() {
+        ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+        populator.setContinueOnError(false);
+        populator.addScript(schemaResource);
+        DatabasePopulatorUtils.execute(populator, dataSource);
+        logger.info("Database schema synchronized.");
+    }
+
+    void synchronizeSeed() throws Exception {
         int importedRows = 0;
         Set<Integer> questionIds = new HashSet<>();
         Set<String> domains = new HashSet<>();
@@ -149,6 +203,79 @@ public class SatQuestionDataSeeder implements ApplicationRunner {
         }
 
         logger.info("SAT question seed synchronized: rows={}, domains={}", importedRows, domains.size());
+    }
+
+    private void synchronizeWithRetry() {
+        long retryDelayMillis = retryInitialDelayMillis;
+
+        while (running) {
+            try {
+                synchronizeOnce();
+                return;
+            } catch (Exception exception) {
+                if (!isTransientDatabaseFailure(exception)) {
+                    logger.error("Database bootstrap stopped after a non-transient failure.", exception);
+                    return;
+                }
+
+                logger.warn(
+                    "Database is not ready; retrying schema and seed synchronization in {} ms.",
+                    retryDelayMillis,
+                    exception
+                );
+            }
+
+            if (!sleepBeforeRetry(retryDelayMillis)) {
+                return;
+            }
+            retryDelayMillis = nextRetryDelay(retryDelayMillis);
+        }
+    }
+
+    private boolean sleepBeforeRetry(long delayMillis) {
+        try {
+            Thread.sleep(delayMillis);
+            return running;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    private long nextRetryDelay(long currentDelayMillis) {
+        if (currentDelayMillis >= retryMaxDelayMillis / 2) {
+            return retryMaxDelayMillis;
+        }
+        return Math.min(retryMaxDelayMillis, currentDelayMillis * 2);
+    }
+
+    private boolean isTransientDatabaseFailure(Throwable failure) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current instanceof CannotGetJdbcConnectionException
+                    || current instanceof TransientDataAccessException
+                    || current instanceof SQLTransientException) {
+                return true;
+            }
+            if (current instanceof SQLException sqlException) {
+                String sqlState = sqlException.getSQLState();
+                if (sqlState != null && (sqlState.startsWith("08") || sqlState.startsWith("40")
+                        || sqlState.startsWith("HYT"))) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    @PreDestroy
+    void stopWorker() {
+        running = false;
+        Thread thread = workerThread;
+        if (thread != null) {
+            thread.interrupt();
+        }
     }
 
     private int requiredInteger(JsonNode node, String fieldName) {

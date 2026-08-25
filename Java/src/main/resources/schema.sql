@@ -138,6 +138,64 @@ CREATE TABLE IF NOT EXISTS user_question_review_state (
     KEY idx_review_state_question (question_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- A small, user-owned planning profile. Scores are goals/context supplied by the
+-- learner; they are never inferred from the uncalibrated practice bank.
+CREATE TABLE IF NOT EXISTS learning_profiles (
+    user_id BIGINT NOT NULL,
+    test_date DATE DEFAULT NULL,
+    target_score SMALLINT DEFAULT NULL,
+    baseline_score SMALLINT DEFAULT NULL,
+    available_days VARCHAR(100) NOT NULL,
+    daily_minutes SMALLINT NOT NULL DEFAULT 30,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id),
+    CONSTRAINT fk_learning_profiles_user
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Learner reflections are deliberately separate from immutable attempts so a
+-- student can reclassify or resolve a mistake without rewriting history.
+CREATE TABLE IF NOT EXISTS mistake_reflections (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    question_id INT NOT NULL,
+    reason VARCHAR(32) NOT NULL DEFAULT 'UNCLASSIFIED',
+    confidence TINYINT DEFAULT NULL,
+    note VARCHAR(1000) DEFAULT NULL,
+    resolved TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mistake_reflection_user_question (user_id, question_id),
+    KEY idx_mistake_reflection_user_resolved (user_id, resolved),
+    KEY idx_mistake_reflection_question (question_id),
+    CONSTRAINT fk_mistake_reflections_user
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_mistake_reflections_question
+        FOREIGN KEY (question_id) REFERENCES sat_questions (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Reports do not silently change scoring. They create an auditable signal for
+-- future human review of weak, unclear, or incomplete source material.
+CREATE TABLE IF NOT EXISTS question_reports (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    question_id INT NOT NULL,
+    reason VARCHAR(32) NOT NULL,
+    detail VARCHAR(1000) DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_question_report_user_question_reason (user_id, question_id, reason),
+    KEY idx_question_report_question (question_id),
+    KEY idx_question_report_reason (reason),
+    CONSTRAINT fk_question_reports_user
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_question_reports_question
+        FOREIGN KEY (question_id) REFERENCES sat_questions (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Existing installations only stored one current answer per user/question. Seed a
 -- review state once from the newest such record without replacing newer scheduler data.
 INSERT IGNORE INTO user_question_review_state (

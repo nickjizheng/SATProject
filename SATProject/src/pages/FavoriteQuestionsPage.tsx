@@ -4,6 +4,7 @@ import { HeartFilled, DeleteOutlined, EyeOutlined, CheckCircleOutlined, CloseCir
 import { FavoriteQuestionService, type FavoriteQuestionResponse } from '../services/favoriteQuestionService';
 import { SatService } from '../services/satService';
 import MathRenderer from '../components/MathRenderer';
+import QuestionVisual from '../components/QuestionVisual';
 import { getDomainDisplayName } from '../utils/domainMapping';
 import type { SatQuestion, AnswerResponse } from '../types/sat';
 
@@ -224,23 +225,7 @@ const FavoriteQuestionsPage: React.FC = () => {
               </Space>
             </div>
 
-            {/* SVG内容 */}
-            {currentQuestion.visualsSvgContent &&
-             currentQuestion.visualsSvgContent !== 'null' &&
-             currentQuestion.visualsSvgContent.trim() !== '' && (
-              <div
-                className="question-visual"
-                style={{
-                  textAlign: 'center',
-                  margin: '20px 0',
-                  border: '1px solid #e8e8e8',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  backgroundColor: '#fafafa'
-                }}
-                dangerouslySetInnerHTML={{ __html: currentQuestion.visualsSvgContent }}
-              />
-            )}
+            <QuestionVisual svg={currentQuestion.visualsSvgContent} className="my-5" />
 
             {/* 题目段落 */}
             {currentQuestion.questionParagraph &&

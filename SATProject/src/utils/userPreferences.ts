@@ -2,7 +2,6 @@ export interface UserPreferences {
   displayName: string;
   soundEffects: boolean;
   celebrations: boolean;
-  testDate: string;
   dailyReviewGoal: number;
 }
 
@@ -13,7 +12,6 @@ const defaults: UserPreferences = {
   displayName: '',
   soundEffects: true,
   celebrations: true,
-  testDate: '',
   dailyReviewGoal: 12,
 };
 
@@ -28,7 +26,6 @@ export const getUserPreferences = (): UserPreferences => {
       displayName: typeof parsed.displayName === 'string' ? parsed.displayName : defaults.displayName,
       soundEffects: typeof parsed.soundEffects === 'boolean' ? parsed.soundEffects : defaults.soundEffects,
       celebrations: typeof parsed.celebrations === 'boolean' ? parsed.celebrations : defaults.celebrations,
-      testDate: typeof parsed.testDate === 'string' ? parsed.testDate : defaults.testDate,
       dailyReviewGoal: Number.isFinite(requestedGoal)
         ? Math.min(50, Math.max(5, Math.round(requestedGoal)))
         : defaults.dailyReviewGoal,

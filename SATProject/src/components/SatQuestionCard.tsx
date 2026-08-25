@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { message } from 'antd';
-import { Bookmark, BookmarkCheck, CheckCircle2, Lightbulb, XCircle } from 'lucide-react';
+import { AlertCircle, Bookmark, BookmarkCheck, CheckCircle2, ChevronDown, ChevronUp, Lightbulb, XCircle } from 'lucide-react';
 import type { AnswerResponse, SatQuestion } from '../types/sat';
+import type { MistakeReason } from '../types/learning';
 import MathRenderer from './MathRenderer';
+import QuestionVisual from './QuestionVisual';
+import QuestionReportPanel from './QuestionReportPanel';
 import { FavoriteQuestionService } from '../services/favoriteQuestionService';
+import { LearningService } from '../services/learningService';
 import CorrectAnswerCelebration from './CorrectAnswerCelebration';
 import { playCorrectAnswerChime, prepareFeedbackAudio } from '../utils/feedbackAudio';
 import { getUserPreferences } from '../utils/userPreferences';
+import { mistakeReasonOptions } from '../utils/learningLabels';
 import { Button } from './ui/button';
 import { cn } from '../lib/utils';
 
@@ -22,29 +27,6 @@ interface SatQuestionCardProps {
   submitting?: boolean;
 }
 
-const sanitizeSvg = (rawSvg?: string) => {
-  if (!rawSvg || rawSvg === 'null' || typeof DOMParser === 'undefined') return '';
-
-  const document = new DOMParser().parseFromString(rawSvg, 'image/svg+xml');
-  if (document.querySelector('parsererror') || document.documentElement.tagName.toLowerCase() !== 'svg') return '';
-
-  document.querySelectorAll('script, foreignObject, iframe, object, embed, audio, video, link, style').forEach(node => node.remove());
-  document.querySelectorAll('*').forEach(node => {
-    for (const attribute of Array.from(node.attributes)) {
-      const name = attribute.name.toLowerCase();
-      const value = attribute.value.trim().toLowerCase();
-      if (name.startsWith('on') || value.includes('javascript:') || value.includes('data:text/html')) {
-        node.removeAttribute(attribute.name);
-      }
-      if ((name === 'href' || name === 'xlink:href') && value && !value.startsWith('#')) {
-        node.removeAttribute(attribute.name);
-      }
-    }
-  });
-
-  return new XMLSerializer().serializeToString(document.documentElement);
-};
-
 export default function SatQuestionCard({
   question,
   selectedAnswer,
@@ -59,7 +41,14 @@ export default function SatQuestionCard({
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const safeSvg = useMemo(() => sanitizeSvg(question.visualsSvgContent), [question.visualsSvgContent]);
+  const [reflectionReason, setReflectionReason] = useState<MistakeReason>('UNCLASSIFIED');
+  const [reflectionConfidence, setReflectionConfidence] = useState<number | null>(null);
+  const [reflectionNote, setReflectionNote] = useState('');
+  const [reflectionExpanded, setReflectionExpanded] = useState(false);
+  const [reflectionSaving, setReflectionSaving] = useState(false);
+  const [reflectionState, setReflectionState] = useState<'idle' | 'saved' | 'error'>('idle');
+  const reflectionInFlight = useRef(false);
+  const reflectionRequestSequence = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -77,6 +66,17 @@ export default function SatQuestionCard({
     const timeout = window.setTimeout(() => setShowCelebration(false), 1700);
     return () => window.clearTimeout(timeout);
   }, [answerResult, celebrateOnCorrect, showAnswer]);
+
+  useEffect(() => {
+    reflectionRequestSequence.current += 1;
+    setReflectionReason('UNCLASSIFIED');
+    setReflectionConfidence(null);
+    setReflectionNote('');
+    setReflectionExpanded(false);
+    setReflectionSaving(false);
+    setReflectionState('idle');
+    reflectionInFlight.current = false;
+  }, [question.id]);
 
   const toggleFavorite = async () => {
     setFavoriteLoading(true);
@@ -100,6 +100,37 @@ export default function SatQuestionCard({
     }
   };
 
+  const saveReflection = async (nextReason = reflectionReason) => {
+    if (answerResult?.isCorrect || nextReason === 'UNCLASSIFIED' || reflectionInFlight.current) return;
+
+    const requestSequence = ++reflectionRequestSequence.current;
+    reflectionInFlight.current = true;
+    setReflectionSaving(true);
+    setReflectionState('idle');
+    try {
+      await LearningService.updateMistake(question.id, {
+        reason: nextReason,
+        confidence: reflectionConfidence,
+        note: reflectionNote.trim(),
+        resolved: false,
+      });
+      if (requestSequence === reflectionRequestSequence.current) setReflectionState('saved');
+    } catch {
+      if (requestSequence === reflectionRequestSequence.current) setReflectionState('error');
+    } finally {
+      if (requestSequence === reflectionRequestSequence.current) {
+        reflectionInFlight.current = false;
+        setReflectionSaving(false);
+      }
+    }
+  };
+
+  const chooseReflectionReason = (reason: MistakeReason) => {
+    setReflectionReason(reason);
+    setReflectionState('idle');
+    void saveReflection(reason);
+  };
+
   const options = [
     { key: 'A', value: question.choiceA },
     { key: 'B', value: question.choiceB },
@@ -113,7 +144,7 @@ export default function SatQuestionCard({
 
       <header className="flex items-center justify-between gap-4 border-b border-stone-900/10 pb-5">
         <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[.18em] text-[#c34f38]">Quality-screened practice</p>
+          <p className="text-[10px] font-extrabold uppercase tracking-[.18em] text-[#c34f38]">Practice item</p>
           <p className="mt-1 text-xs text-stone-500">Question {question.id}</p>
         </div>
         <button
@@ -131,9 +162,7 @@ export default function SatQuestionCard({
         </button>
       </header>
 
-      {safeSvg && (
-        <div className="question-visual my-6 rounded-2xl border border-stone-900/10 bg-white p-4 text-center" dangerouslySetInnerHTML={{ __html: safeSvg }} />
-      )}
+      <QuestionVisual svg={question.visualsSvgContent} className="my-6" />
 
       {question.questionParagraph && question.questionParagraph !== 'null' && (
         <div className="my-6 max-h-72 overflow-auto rounded-2xl border border-stone-900/10 bg-[#f5f2e9] p-5 text-[15px] leading-7 text-stone-700">
@@ -204,18 +233,107 @@ export default function SatQuestionCard({
               {answerResult.isCorrect ? <CheckCircle2 size={21} /> : <XCircle size={21} />}
             </span>
             <div>
-              <h3 className="font-display text-2xl font-semibold text-stone-900">{answerResult.isCorrect ? 'That’s right.' : 'Not this time.'}</h3>
-              <p className="mt-1 text-sm text-stone-600">You chose {answerResult.userAnswer}. The correct answer is <strong>{answerResult.correctAnswer}</strong>.</p>
+              <h3 className="font-display text-2xl font-semibold text-stone-900">{answerResult.isCorrect ? 'Matches the provided key.' : 'Different from the provided key.'}</h3>
+              <p className="mt-1 text-sm text-stone-600">You chose {answerResult.userAnswer}. The provided key is <strong>{answerResult.correctAnswer}</strong>.</p>
             </div>
           </div>
 
           {answerResult.explanation && answerResult.explanation !== 'null' && (
             <div className="mt-5 rounded-2xl border border-white/80 bg-white/75 p-5">
-              <div className="mb-3 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.15em] text-[#123d3a]"><Lightbulb size={16} /> Why</div>
+              <div className="mb-3 flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.15em] text-[#123d3a]"><Lightbulb size={16} /> Provided explanation</div>
               <div className="text-sm leading-7 text-stone-700"><MathRenderer text={answerResult.explanation} /></div>
             </div>
           )}
         </section>
+      )}
+
+      {showAnswer && answerResult && !answerResult.isCorrect && (
+        <section aria-label="Mistake reflection" className="mt-4 rounded-[1.5rem] border border-[#e96b4d]/20 bg-[#fff4ef] p-5 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-[#bd4e39]">One-minute repair</p>
+              <h3 className="mt-1 font-display text-2xl font-semibold text-stone-900">What got in the way?</h3>
+              <p className="mt-1 text-xs leading-5 text-stone-500">One tap saves the closest cause to your Mistake Lab. This is your reflection, not an automated diagnosis.</p>
+            </div>
+            {reflectionState === 'saved' && <p role="status" className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-emerald-800"><CheckCircle2 size={14} /> Saved</p>}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Reason for this mistake">
+            {mistakeReasonOptions.map(option => (
+              <button
+                key={option.value}
+                type="button"
+                title={option.description}
+                aria-pressed={reflectionReason === option.value}
+                disabled={reflectionSaving}
+                onClick={() => chooseReflectionReason(option.value)}
+                className={cn(
+                  'rounded-full border px-3 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-700/15 disabled:opacity-60',
+                  reflectionReason === option.value
+                    ? 'border-teal-800 bg-teal-800 text-white'
+                    : 'border-stone-900/10 bg-white/85 text-stone-600 hover:border-teal-800/35 hover:text-teal-900',
+                )}
+              >{option.shortLabel}</button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            aria-expanded={reflectionExpanded}
+            onClick={() => setReflectionExpanded(value => !value)}
+            className="mt-4 flex items-center gap-1.5 rounded-lg text-xs font-extrabold text-teal-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-700/15"
+          >
+            {reflectionExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            Add confidence or a note
+          </button>
+
+          {reflectionExpanded && (
+            <div className="mt-4 grid gap-4 rounded-2xl border border-white bg-white/65 p-4 sm:grid-cols-[180px_minmax(0,1fr)]">
+              <fieldset>
+                <legend className="text-xs font-bold text-stone-700">Confidence <span className="font-normal text-stone-400">(optional)</span></legend>
+                <div className="mt-2 grid grid-cols-5 gap-1" role="radiogroup" aria-label="Confidence from one to five">
+                  {[1, 2, 3, 4, 5].map(value => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={reflectionConfidence === value}
+                      aria-label={`Confidence ${value} of 5`}
+                      onClick={() => { setReflectionConfidence(value); setReflectionState('idle'); }}
+                      className={cn(
+                        'h-9 rounded-lg border text-xs font-extrabold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-700/15',
+                        reflectionConfidence === value ? 'border-[#e96b4d] bg-[#e96b4d] text-white' : 'border-stone-900/10 bg-white text-stone-500',
+                      )}
+                    >{value}</button>
+                  ))}
+                </div>
+                <div className="mt-1 flex justify-between text-[9px] font-bold text-stone-400"><span>Guess</span><span>Certain</span></div>
+              </fieldset>
+              <label className="grid gap-2 text-xs font-bold text-stone-700">
+                Cue for next time <span className="font-normal text-stone-400">(optional)</span>
+                <textarea
+                  rows={2}
+                  maxLength={500}
+                  value={reflectionNote}
+                  placeholder="A rule, signal word, or step to remember"
+                  onChange={event => { setReflectionNote(event.target.value); setReflectionState('idle'); }}
+                  className="w-full resize-y rounded-xl border border-stone-900/10 bg-white px-3 py-2 text-sm font-normal leading-6 text-stone-700 outline-none focus:border-teal-700 focus:ring-4 focus:ring-teal-700/10"
+                />
+              </label>
+              <div className="sm:col-span-2">
+                <Button size="sm" disabled={reflectionSaving || reflectionReason === 'UNCLASSIFIED'} onClick={() => void saveReflection()}>
+                  {reflectionSaving ? 'Saving…' : 'Save cue'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {reflectionState === 'error' && <p role="alert" className="mt-3 flex items-start gap-2 text-xs font-bold leading-5 text-red-700"><AlertCircle className="mt-0.5 shrink-0" size={14} /> Reflection could not be saved. Your practice can continue; try again when ready.</p>}
+        </section>
+      )}
+
+      {showAnswer && answerResult && (
+        <QuestionReportPanel key={question.id} questionId={question.id} className="mt-4" />
       )}
     </article>
   );

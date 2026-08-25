@@ -1,15 +1,9 @@
-import { useEffect, useState } from 'react';
-import { SatService } from '../services/satService';
 import TrademarkNotice from '../components/TrademarkNotice';
 import { Card } from '../components/ui/card';
-import type { SatBankSummary } from '../types/sat';
 
 export interface ResourcesPageProps {
-  bankSummary?: SatBankSummary | null;
   showEnrichment?: boolean;
 }
-
-type SummaryStatus = 'idle' | 'loading' | 'ready' | 'unavailable';
 
 type ExternalLink = {
   label: string;
@@ -159,42 +153,7 @@ function ExternalResourceCard({ resource }: { resource: Resource }) {
   );
 }
 
-export default function ResourcesPage({ bankSummary, showEnrichment = true }: ResourcesPageProps) {
-  const [remoteSummary, setRemoteSummary] = useState<SatBankSummary | null>(null);
-  const [summaryStatus, setSummaryStatus] = useState<SummaryStatus>(bankSummary === undefined ? 'idle' : bankSummary ? 'ready' : 'unavailable');
-
-  useEffect(() => {
-    if (bankSummary !== undefined) {
-      setRemoteSummary(null);
-      setSummaryStatus(bankSummary ? 'ready' : 'unavailable');
-      return;
-    }
-
-    let cancelled = false;
-    setSummaryStatus('loading');
-    void SatService.getBankSummary()
-      .then(summary => {
-        if (!cancelled) {
-          setRemoteSummary(summary);
-          setSummaryStatus('ready');
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setSummaryStatus('unavailable');
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [bankSummary]);
-
-  const summary = bankSummary === undefined ? remoteSummary : bankSummary;
-  const usableCount = summary?.usableQuestions;
-  const quarantinedCount = summary?.quarantinedQuestions;
-  const duplicateCount = summary?.duplicateQuestions;
-
+export default function ResourcesPage({ showEnrichment = true }: ResourcesPageProps) {
   return (
     <div className="page-shell" id="main-content">
       <section className="relative overflow-hidden rounded-[2rem] bg-[#173c39] px-6 py-10 text-white sm:px-10 sm:py-14 lg:px-14">
@@ -255,27 +214,20 @@ export default function ResourcesPage({ bankSummary, showEnrichment = true }: Re
               Usable means screened.
             </h2>
             <p className="mt-5 max-w-md text-sm leading-7 text-stone-600">
-              Bank size is not a quality claim. The live total appears only when the service can report it; this page never substitutes a hardcoded number.
+              Practice volume is not presented as a quality claim. Trust comes from screening, clear provenance, and a way for learners to report suspect material.
             </p>
 
-            <div aria-live="polite" className="mt-7 rounded-3xl bg-[#123d3a] p-6 text-white">
-              <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-[#f1b49f]">Current bank signal</p>
-              {summaryStatus === 'loading' && <p className="mt-3 text-sm text-white/70">Checking the live quality summary…</p>}
-              {summaryStatus === 'ready' && usableCount !== undefined && (
-                <p className="mt-3 font-display text-4xl font-semibold">{usableCount.toLocaleString()} <span className="text-base font-normal text-white/60">usable questions</span></p>
-              )}
-              {summaryStatus === 'ready' && usableCount === undefined && (
-                <p className="mt-3 text-sm text-white/70">The bank is reporting quality status without a usable-question total.</p>
-              )}
-              {(summaryStatus === 'idle' || summaryStatus === 'unavailable') && (
-                <p className="mt-3 text-sm leading-6 text-white/70">Live usable total will appear when the bank-summary service is available.</p>
-              )}
-              {(quarantinedCount !== undefined || duplicateCount !== undefined) && (
-                <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/10 pt-4 text-xs text-white/55">
-                  {quarantinedCount !== undefined && <span>{quarantinedCount.toLocaleString()} quarantined from practice</span>}
-                  {duplicateCount !== undefined && <span>{duplicateCount.toLocaleString()} duplicate item{duplicateCount === 1 ? '' : 's'} excluded</span>}
-                </div>
-              )}
+            <div className="mt-7 rounded-3xl bg-[#123d3a] p-6 text-white">
+              <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-[#f1b49f]">Practice admission rule</p>
+              <p className="mt-3 font-display text-2xl font-semibold leading-tight">Screen first. Practice second.</p>
+              <p className="mt-3 text-sm leading-6 text-white/70">
+                Only material that clears the current quality screen enters practice. If an item still looks wrong, report it directly from the answer review.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4 text-[10px] font-extrabold uppercase tracking-[.12em] text-white/60">
+                <span className="rounded-full border border-white/10 px-3 py-2">Screened before practice</span>
+                <span className="rounded-full border border-white/10 px-3 py-2">Learner reports enabled</span>
+                <span className="rounded-full border border-white/10 px-3 py-2">Official benchmarks linked</span>
+              </div>
             </div>
           </div>
 
@@ -296,7 +248,7 @@ export default function ResourcesPage({ bankSummary, showEnrichment = true }: Re
           <div>
             <p className="page-kicker">Import policy</p>
             <h2 id="import-policy-heading" className="mt-3 font-display text-4xl font-semibold leading-none tracking-tight text-stone-900 sm:text-5xl">
-              Provenance before volume.
+              Provenance before expansion.
             </h2>
             <p className="mt-5 max-w-md text-sm leading-7 text-stone-600">
               Every source receives one explicit handling status. A public webpage is not, by itself, permission to copy its questions.

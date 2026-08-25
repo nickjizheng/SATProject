@@ -14,6 +14,9 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const SatPracticePage = lazy(() => import('./pages/SatPracticePage'));
 const SatSingleQuestionPage = lazy(() => import('./pages/SatSingleQuestionPage'));
 const ReviewPage = lazy(() => import('./pages/ReviewPage'));
+const ExamCoachPage = lazy(() => import('./pages/ExamCoachPage'));
+const PacingLabPage = lazy(() => import('./pages/PacingLabPage'));
+const MistakeLabPage = lazy(() => import('./pages/MistakeLabPage'));
 const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
 const DictionaryPage = lazy(() => import('./pages/DictionaryPage'));
 const FavoriteWordsPage = lazy(() => import('./pages/FavoriteWordsPage'));
@@ -39,6 +42,9 @@ function AppShell() {
             <Route path="/sat-practice" element={<AuthGuard><SatPracticePage /></AuthGuard>} />
             <Route path="/sat-single" element={<AuthGuard><SatSingleQuestionPage /></AuthGuard>} />
             <Route path="/review" element={<AuthGuard><ReviewPage /></AuthGuard>} />
+            <Route path="/exam-coach" element={<AuthGuard><ExamCoachPage /></AuthGuard>} />
+            <Route path="/pacing-lab" element={<AuthGuard><PacingLabPage /></AuthGuard>} />
+            <Route path="/mistakes" element={<AuthGuard><MistakeLabPage /></AuthGuard>} />
             <Route path="/resources" element={<AuthGuard><ResourcesPage /></AuthGuard>} />
             <Route path="/dictionary" element={<AuthGuard><DictionaryPage /></AuthGuard>} />
             <Route path="/favorite-words" element={<AuthGuard><FavoriteWordsPage /></AuthGuard>} />

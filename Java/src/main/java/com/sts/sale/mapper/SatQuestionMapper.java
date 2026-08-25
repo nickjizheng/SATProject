@@ -37,7 +37,7 @@ public interface SatQuestionMapper extends BaseMapper<SatQuestion> {
     @Select({
         "SELECT sq.* FROM sat_questions sq",
         "JOIN sat_question_quality quality ON quality.question_id = sq.id AND quality.usable = 1",
-        "WHERE sq.domain = #{domain}",
+        "WHERE TRIM(sq.domain) = #{domain}",
         "AND UPPER(TRIM(sq.correct_answer)) IN ('A', 'B', 'C', 'D')",
         "ORDER BY RAND() LIMIT #{limit}"
     })
@@ -77,7 +77,7 @@ public interface SatQuestionMapper extends BaseMapper<SatQuestion> {
         "  WHERE record.session_id = #{sessionId} AND record.question_id = sq.id",
         ")",
         "<if test='domain != null and domain != \"\"'>",
-        "  AND sq.domain = #{domain}",
+        "  AND TRIM(sq.domain) = #{domain}",
         "</if>",
         "ORDER BY RAND() LIMIT #{limit}",
         "</script>"
@@ -96,7 +96,7 @@ public interface SatQuestionMapper extends BaseMapper<SatQuestion> {
         "  WHERE record.user_id = #{userId} AND record.question_id = sq.id",
         ")",
         "<if test='domain != null and domain != \"\"'>",
-        "  AND sq.domain = #{domain}",
+        "  AND TRIM(sq.domain) = #{domain}",
         "</if>",
         "ORDER BY RAND() LIMIT #{limit}",
         "</script>"
@@ -111,7 +111,7 @@ public interface SatQuestionMapper extends BaseMapper<SatQuestion> {
         "JOIN sat_question_quality quality ON quality.question_id = sq.id AND quality.usable = 1",
         "WHERE UPPER(TRIM(sq.correct_answer)) IN ('A', 'B', 'C', 'D')",
         "<if test='domain != null and domain != \"\"'>",
-        "  AND sq.domain = #{domain}",
+        "  AND TRIM(sq.domain) = #{domain}",
         "</if>",
         "</script>"
     })
@@ -125,7 +125,7 @@ public interface SatQuestionMapper extends BaseMapper<SatQuestion> {
         "WHERE record.user_id = #{userId}",
         "AND UPPER(TRIM(sq.correct_answer)) IN ('A', 'B', 'C', 'D')",
         "<if test='domain != null and domain != \"\"'>",
-        "  AND sq.domain = #{domain}",
+        "  AND TRIM(sq.domain) = #{domain}",
         "</if>",
         "</script>"
     })
@@ -140,7 +140,7 @@ public interface SatQuestionMapper extends BaseMapper<SatQuestion> {
         "WHERE record.session_id = #{sessionId}",
         "AND UPPER(TRIM(sq.correct_answer)) IN ('A', 'B', 'C', 'D')",
         "<if test='domain != null and domain != \"\"'>",
-        "  AND sq.domain = #{domain}",
+        "  AND TRIM(sq.domain) = #{domain}",
         "</if>",
         "</script>"
     })

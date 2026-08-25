@@ -41,6 +41,16 @@ export default function SatPracticePage() {
         setDomains(domainList);
         setAnswerSummary(summary);
 
+        const requestedDomain = searchParams.get('domain');
+        const matchedDomain = requestedDomain
+          ? domainList.find(domain => domain.toLowerCase() === requestedDomain.toLowerCase())
+          : undefined;
+        if (matchedDomain) {
+          setSelectedDomain(matchedDomain);
+          await loadQuestions(matchedDomain, questionCount);
+          return;
+        }
+
         if (searchParams.get('focus') === 'weakest') {
           const stats = await DashboardService.getUserStats();
           const weakest = [...stats.domainStats]
@@ -169,7 +179,7 @@ export default function SatPracticePage() {
         <div>
           <p className="page-kicker flex items-center gap-2"><Target size={14} /> Focused practice</p>
           <h1 className="page-title mt-3">Build a session with <em className="font-light text-teal-800">purpose.</em></h1>
-          <p className="page-subtitle mt-5">Choose a domain or let SAT-Buddy focus on your weakest area. New sets use only quality-screened, unanswered questions.</p>
+          <p className="page-subtitle mt-5">Choose a domain or let SAT-Buddy focus on your weakest area. Practice is quality-screened, but it remains a learning signal rather than an official score source.</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs font-bold text-stone-600">
           <span className="rounded-full border border-stone-900/10 bg-white/70 px-4 py-2">{answerSummary.accuracy}% all-time accuracy</span>

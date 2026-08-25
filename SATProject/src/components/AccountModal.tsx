@@ -66,12 +66,9 @@ export default function AccountModal({ open, user, onClose, onLogout, onProfileS
       <div className="rounded-2xl border border-stone-900/10 bg-[#e6d8bb]/25 p-4">
         <div className="mb-4 flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#123d3a] text-[#f4d8cc]"><CalendarOutlined /></span>
-          <div><Text strong>Study plan</Text><Paragraph className="!mb-0 !mt-1 !text-xs !text-stone-500">Set a target date and a manageable daily memory-review goal for this device.</Paragraph></div>
+          <div><Text strong>Study plan</Text><Paragraph className="!mb-0 !mt-1 !text-xs !text-stone-500">Manage the daily memory-review goal for this device. Your shared test date and weekly plan live in Exam Coach.</Paragraph></div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Form.Item name="testDate" label="Target test date" className="!mb-0">
-            <Input type="date" min={new Date().toISOString().slice(0, 10)} aria-label="Target test date" />
-          </Form.Item>
+        <div>
           <Form.Item name="dailyReviewGoal" label="Daily review goal" className="!mb-0" rules={[{ required: true, message: 'Choose a daily review goal.' }]}>
             <InputNumber min={5} max={50} step={1} addonAfter="questions" className="!w-full" />
           </Form.Item>

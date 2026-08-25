@@ -19,7 +19,7 @@ export interface AnswerRequest {
   answer: string; // A, B, C, D
   sessionId: string; // 会话ID
   submissionId?: string;
-  studyMode?: 'practice' | 'quick' | 'review' | 'favorite';
+  studyMode?: 'practice' | 'quick' | 'review' | 'favorite' | 'pacing';
   responseTimeMs?: number;
 }
 

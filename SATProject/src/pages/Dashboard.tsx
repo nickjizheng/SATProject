@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Alert, Button, Card, Col, Empty, List, message, Progress, Row, Space, Spin, Statistic, Tag, Typography } from 'antd';
 import {
   BookOutlined,
+  CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
   FireOutlined,
@@ -12,6 +13,7 @@ import {
   StarOutlined,
   TrophyOutlined,
   UserOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import { DashboardService, type RecentActivity, type StudyProgress, type UserStats } from '../services/dashboardService';
 import { getUserPreferences } from '../utils/userPreferences';
@@ -183,7 +185,10 @@ export default function Dashboard() {
           <Card title="Choose your next move" className="mb-5">
             <Row gutter={[12, 12]}>
               <Col xs={24} sm={12}><Button type="primary" block size="large" icon={<BookOutlined />} onClick={() => navigate('/sat-practice')}>SAT Practice</Button></Col>
+              <Col xs={24} sm={12}><Button block size="large" icon={<CalendarOutlined />} onClick={() => navigate('/exam-coach')}>Exam Coach</Button></Col>
               <Col xs={24} sm={12}><Button block size="large" icon={<ClockCircleOutlined />} onClick={() => navigate('/review')}>Memory Review</Button></Col>
+              <Col xs={24} sm={12}><Button block size="large" icon={<TrophyOutlined />} onClick={() => navigate('/pacing-lab')}>Pacing Lab</Button></Col>
+              <Col xs={24} sm={12}><Button block size="large" icon={<WarningOutlined />} onClick={() => navigate('/mistakes')}>Mistake Lab</Button></Col>
               <Col xs={24} sm={12}><Button block size="large" icon={<FireOutlined />} onClick={() => navigate('/sat-single')}>Daily Quick</Button></Col>
               <Col xs={24} sm={12}><Button block size="large" icon={<SearchOutlined />} onClick={() => navigate('/dictionary')}>Dictionary</Button></Col>
               <Col xs={24} sm={12}><Button block size="large" icon={<HeartOutlined />} onClick={() => navigate('/favorite-words')}>Saved Words</Button></Col>

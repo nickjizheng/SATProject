@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, BookOpenText, Brain, ChartNoAxesCombined, LibraryBig, Mail, Search, Sparkles, Target, Zap } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpenText, Brain, CalendarRange, ChartNoAxesCombined, Gauge, LibraryBig, Mail, NotebookTabs, Search, Sparkles, Target, Zap } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { ReviewService } from '../services/reviewService';
@@ -9,10 +9,13 @@ import type { ReviewSummary } from '../types/review';
 import { getUserPreferences, PREFERENCES_EVENT } from '../utils/userPreferences';
 
 const features = [
+  { icon: CalendarRange, title: 'Exam coach', copy: 'A living plan that rebalances around your date, availability and learning evidence.', path: '/exam-coach', tone: 'bg-[#123d3a] text-white' },
   { icon: BookOpenText, title: 'Curated practice', copy: 'Focused SAT sets that adapt around what you have already completed.', path: '/sat-practice', tone: 'bg-teal-800 text-white' },
-  { icon: ChartNoAxesCombined, title: 'Visible progress', copy: 'See accuracy, activity and domain performance without digging through data.', path: '/dashboard', tone: 'bg-[#e96b4d] text-white' },
+  { icon: Gauge, title: 'Pacing lab', copy: 'Separate skill gaps from rushed or slow decisions in an original timed simulation.', path: '/pacing-lab', tone: 'bg-[#e96b4d] text-white' },
+  { icon: NotebookTabs, title: 'Mistake lab', copy: 'Turn misses into patterns, reflections and a specific repair action.', path: '/mistakes', tone: 'bg-[#edd6a8] text-stone-900' },
   { icon: Search, title: 'Vocabulary studio', copy: 'Look up, understand and save unfamiliar words while you study.', path: '/dictionary', tone: 'bg-[#edd6a8] text-stone-900' },
   { icon: Brain, title: 'Memory review', copy: 'Revisit each question when forgetting is most likely, not at random.', path: '/review', tone: 'bg-stone-800 text-white' },
+  { icon: ChartNoAxesCombined, title: 'Visible progress', copy: 'See accuracy, activity and domain performance without digging through data.', path: '/dashboard', tone: 'bg-[#e96b4d] text-white' },
   { icon: LibraryBig, title: 'Trusted resources', copy: 'Launch official and carefully licensed learning sources without copied content.', path: '/resources', tone: 'bg-[#d7e7e3] text-teal-950' },
 ];
 
@@ -27,8 +30,6 @@ export default function HomePage() {
   const [selectedPlan, setSelectedPlan] = useState(studyPlans[0]);
   const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(null);
   const [preferences, setPreferences] = useState(getUserPreferences);
-  const testDate = preferences.testDate ? new Date(`${preferences.testDate}T12:00:00`) : null;
-  const daysUntilTest = testDate ? Math.max(0, Math.ceil((testDate.getTime() - Date.now()) / 86400000)) : null;
 
   useEffect(() => {
     ReviewService.getSummary().then(setReviewSummary).catch(() => undefined);
@@ -45,13 +46,13 @@ export default function HomePage() {
           <h1 className="page-title mt-5 max-w-4xl">Study with <em className="font-light text-teal-800">direction</em>, not just repetition.</h1>
           <p className="page-subtitle mt-7 max-w-2xl">A calmer, clearer place to practise questions, understand your performance and turn new vocabulary into lasting knowledge.</p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Button size="lg" onClick={() => navigate(reviewSummary?.dueNow ? '/review' : '/sat-practice')}>{reviewSummary?.dueNow ? `Review ${reviewSummary.dueNow} due` : 'Start a practice set'} <ArrowUpRight size={18} /></Button>
+            <Button size="lg" onClick={() => navigate('/exam-coach')}>Open my plan <ArrowUpRight size={18} /></Button>
             <Button size="lg" variant="secondary" onClick={() => navigate('/dashboard')}>View my progress</Button>
           </div>
           <div className="mt-12 flex flex-wrap gap-x-8 gap-y-4 border-t border-stone-900/10 pt-6 text-sm text-stone-600">
             <span><strong className="text-stone-900">One account</strong> across every mode</span>
             <span><strong className="text-stone-900">Memory timing</strong> from every answer</span>
-            <span><strong className="text-stone-900">{daysUntilTest === null ? 'Set a test date' : `${daysUntilTest} days`}</strong> {daysUntilTest === null ? 'in profile settings' : 'to your target'}</span>
+            <span><strong className="text-stone-900">Exam Coach</strong> keeps the test date and weekly plan in sync</span>
           </div>
         </motion.div>
 
@@ -77,7 +78,7 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      <section className="grid gap-4 pb-8 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 pb-8 md:grid-cols-2 xl:grid-cols-4">
         {features.map(({ icon: Icon, title, copy, path, tone }, index) => (
           <motion.button key={title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .25 + index * .08 }} onClick={() => navigate(path)} className="group text-left">
             <Card className="h-full p-6 transition-transform duration-300 group-hover:-translate-y-1">

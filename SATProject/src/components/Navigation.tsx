@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   BookOpenText,
+  CalendarRange,
   Brain,
   ChartNoAxesCombined,
   ChevronLeft,
@@ -12,9 +13,11 @@ import {
   Home,
   MoreHorizontal,
   LibraryBig,
+  NotebookTabs,
   Search,
   Sparkles,
   Star,
+  Timer,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import AccountModal, { type AccountUser } from './AccountModal';
@@ -29,8 +32,11 @@ interface NavigationProps {
 
 const navItems = [
   { path: '/home', label: 'Home', icon: Home },
+  { path: '/exam-coach', label: 'Exam coach', icon: CalendarRange },
   { path: '/review', label: 'Memory review', icon: Brain },
   { path: '/sat-practice', label: 'Practice', icon: BookOpenText },
+  { path: '/pacing-lab', label: 'Pacing lab', icon: Timer },
+  { path: '/mistakes', label: 'Mistake lab', icon: NotebookTabs },
   { path: '/dashboard', label: 'Dashboard', icon: ChartNoAxesCombined },
   { path: '/sat-single', label: 'Daily quick', icon: Sparkles },
   { path: '/dictionary', label: 'Dictionary', icon: Search },
@@ -41,9 +47,9 @@ const navItems = [
 
 const mobilePrimaryItems = [
   { ...navItems[0], mobileLabel: 'Home' },
-  { ...navItems[1], mobileLabel: 'Review' },
-  { ...navItems[2], mobileLabel: 'Practice' },
-  { ...navItems[3], mobileLabel: 'Progress' },
+  { ...navItems[1], mobileLabel: 'Coach' },
+  { ...navItems[2], mobileLabel: 'Review' },
+  { ...navItems[3], mobileLabel: 'Practice' },
 ];
 
 const mobileMoreItems = navItems.slice(4);

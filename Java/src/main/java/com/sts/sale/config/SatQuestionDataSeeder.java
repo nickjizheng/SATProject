@@ -44,6 +44,16 @@ public class SatQuestionDataSeeder implements ApplicationRunner {
             choice_d = VALUES(choice_d),
             correct_answer = VALUES(correct_answer)
         """;
+    private static final String QUALITY_UPSERT_SQL = """
+        INSERT INTO sat_question_quality (
+            question_id, quality_status, usable, answer_key_source, duplicate_of_question_id
+        ) VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            quality_status = VALUES(quality_status),
+            usable = VALUES(usable),
+            answer_key_source = VALUES(answer_key_source),
+            duplicate_of_question_id = VALUES(duplicate_of_question_id)
+        """;
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
@@ -72,6 +82,7 @@ public class SatQuestionDataSeeder implements ApplicationRunner {
         Set<Integer> questionIds = new HashSet<>();
         Set<String> domains = new HashSet<>();
         List<Object[]> batch = new ArrayList<>(BATCH_SIZE);
+        List<Object[]> qualityBatch = new ArrayList<>(BATCH_SIZE);
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 seedResource.getInputStream(), StandardCharsets.UTF_8))) {
@@ -83,6 +94,9 @@ public class SatQuestionDataSeeder implements ApplicationRunner {
                 int questionId = requiredInteger(question, "id");
                 String domain = requiredText(question, "domain");
                 String correctAnswer = requiredText(question, "correct_answer").toUpperCase();
+                String qualityStatus = requiredText(question, "quality_status");
+                boolean usable = qualityStatus.equals("source_provided")
+                    || qualityStatus.equals("auto_approved");
 
                 if (!questionIds.add(questionId)) {
                     throw new IllegalStateException("Duplicate SAT question ID in seed: " + questionId);
@@ -107,18 +121,28 @@ public class SatQuestionDataSeeder implements ApplicationRunner {
                     requiredText(choices, "D"),
                     correctAnswer
                 });
+                qualityBatch.add(new Object[]{
+                    questionId,
+                    qualityStatus,
+                    usable,
+                    requiredText(question, "answer_key_source"),
+                    nullableInteger(question, "duplicate_of_question_id")
+                });
                 domains.add(domain);
                 importedRows += 1;
 
                 if (batch.size() == BATCH_SIZE) {
                     jdbcTemplate.batchUpdate(UPSERT_SQL, batch);
+                    jdbcTemplate.batchUpdate(QUALITY_UPSERT_SQL, qualityBatch);
                     batch.clear();
+                    qualityBatch.clear();
                 }
             }
         }
 
         if (!batch.isEmpty()) {
             jdbcTemplate.batchUpdate(UPSERT_SQL, batch);
+            jdbcTemplate.batchUpdate(QUALITY_UPSERT_SQL, qualityBatch);
         }
         if (importedRows == 0) {
             throw new IllegalStateException("SAT question seed is empty.");
@@ -141,6 +165,15 @@ public class SatQuestionDataSeeder implements ApplicationRunner {
             throw new IllegalStateException("Missing text field: " + fieldName);
         }
         return value;
+    }
+
+    private Integer nullableInteger(JsonNode node, String fieldName) {
+        JsonNode field = node.get(fieldName);
+        if (field == null || field.isNull()) return null;
+        if (!field.canConvertToInt()) {
+            throw new IllegalStateException("Invalid integer field: " + fieldName);
+        }
+        return field.asInt();
     }
 
     private String nullableText(JsonNode node, String fieldName) {

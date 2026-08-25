@@ -2,6 +2,8 @@ package com.sts.sale.dto;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 /**
  * 答题响应DTO
  */
@@ -32,4 +34,13 @@ public class AnswerResponse {
      * 题目ID
      */
     private Integer questionId;
+
+    /** Ebbinghaus-inspired stage assigned to this attempt (signed-in users only). */
+    private Integer reviewStage;
+
+    /** When this question should next enter the signed-in user's due queue. */
+    private LocalDateTime nextReviewAt;
+
+    /** Length of the assigned interval, useful for concise UI feedback. */
+    private Long intervalMinutes;
 }

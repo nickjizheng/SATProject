@@ -18,6 +18,9 @@ export interface AnswerRequest {
   questionId: number;
   answer: string; // A, B, C, D
   sessionId: string; // 会话ID
+  submissionId?: string;
+  studyMode?: 'practice' | 'quick' | 'review' | 'favorite';
+  responseTimeMs?: number;
 }
 
 export interface NextQuestionRequest {
@@ -38,6 +41,18 @@ export interface AnswerResponse {
   userAnswer: string;
   explanation?: string;
   questionId: number;
+  reviewStage?: number;
+  nextReviewAt?: string;
+  intervalMinutes?: number;
+}
+
+export interface SatBankSummary {
+  totalQuestions: number;
+  usableQuestions: number;
+  quarantinedQuestions: number;
+  duplicateQuestions: number;
+  byDomain: Record<string, number>;
+  byQualityStatus: Record<string, number>;
 }
 
 export interface ApiResponse<T> {

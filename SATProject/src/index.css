@@ -61,6 +61,7 @@ img, video, canvas { max-width: 100%; height: auto; }
 .app-shell.is-collapsed .app-main { margin-left: 88px; }
 .app-shell.is-auth .app-main { margin-left: 0; }
 .route-stage { position: relative; z-index: 1; min-height: 100vh; }
+.app-trademark-notice { width: min(calc(100% - 40px), 1312px); margin: 0 auto 32px; }
 .route-stage > div:not(.auth-canvas):not(.marketing-canvas) {
   width: min(100%, 1440px) !important;
   min-height: 100vh !important;
@@ -226,7 +227,7 @@ img, video, canvas { max-width: 100%; height: auto; }
   .question-navigation-actions > .ant-space-item { flex: 1; }
   .question-navigation-actions .ant-btn { width: 100%; padding-inline: 8px; }
 
-  .sat-question-card { min-height: 0 !important; padding: 0 !important; }
+  .sat-question-card { min-height: 0 !important; }
   .sat-question-card .ant-radio-wrapper { min-width: 0; padding: 12px !important; }
   .question-option-content { align-items: flex-start !important; white-space: normal; }
   .question-option-content .ant-typography { overflow-wrap: anywhere; }

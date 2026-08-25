@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   BookOpenText,
+  Brain,
   ChartNoAxesCombined,
   ChevronLeft,
   ChevronRight,
@@ -10,6 +11,7 @@ import {
   Heart,
   Home,
   MoreHorizontal,
+  LibraryBig,
   Search,
   Sparkles,
   Star,
@@ -18,6 +20,7 @@ import { cn } from '../lib/utils';
 import AccountModal, { type AccountUser } from './AccountModal';
 import Brand from './Brand';
 import { getUserPreferences, PREFERENCES_EVENT } from '../utils/userPreferences';
+import { ReviewService } from '../services/reviewService';
 
 interface NavigationProps {
   collapsed: boolean;
@@ -26,19 +29,21 @@ interface NavigationProps {
 
 const navItems = [
   { path: '/home', label: 'Home', icon: Home },
-  { path: '/dashboard', label: 'Dashboard', icon: ChartNoAxesCombined },
+  { path: '/review', label: 'Memory review', icon: Brain },
   { path: '/sat-practice', label: 'Practice', icon: BookOpenText },
+  { path: '/dashboard', label: 'Dashboard', icon: ChartNoAxesCombined },
   { path: '/sat-single', label: 'Daily quick', icon: Sparkles },
   { path: '/dictionary', label: 'Dictionary', icon: Search },
+  { path: '/resources', label: 'Study resources', icon: LibraryBig },
   { path: '/favorite-words', label: 'Saved words', icon: Heart },
   { path: '/favorite-questions', label: 'Saved questions', icon: Star },
 ];
 
 const mobilePrimaryItems = [
   { ...navItems[0], mobileLabel: 'Home' },
-  { ...navItems[1], mobileLabel: 'Progress' },
+  { ...navItems[1], mobileLabel: 'Review' },
   { ...navItems[2], mobileLabel: 'Practice' },
-  { ...navItems[3], mobileLabel: 'Quick' },
+  { ...navItems[3], mobileLabel: 'Progress' },
 ];
 
 const mobileMoreItems = navItems.slice(4);
@@ -50,6 +55,7 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [displayName, setDisplayName] = useState(() => getUserPreferences().displayName);
+  const [dueCount, setDueCount] = useState(0);
 
   useEffect(() => {
     const user = localStorage.getItem('user');
@@ -58,6 +64,10 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
     } catch {
       setUserInfo(null);
     }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    ReviewService.getSummary().then(summary => setDueCount(summary.dueNow)).catch(() => setDueCount(0));
   }, [location.pathname]);
 
   useEffect(() => {
@@ -109,6 +119,7 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
               {active && <motion.span layoutId="nav-marker" className="absolute left-0 h-6 w-1 rounded-r-full bg-[#e96b4d]" />}
               <Icon size={20} className="shrink-0" strokeWidth={active ? 2.4 : 1.8} />
               {!collapsed && <span className="truncate">{label}</span>}
+              {!collapsed && path === '/review' && dueCount > 0 && <span className="ml-auto rounded-full bg-[#e96b4d] px-2 py-0.5 text-[9px] font-extrabold text-white">{dueCount > 99 ? '99+' : dueCount}</span>}
             </motion.button>
           );
         })}

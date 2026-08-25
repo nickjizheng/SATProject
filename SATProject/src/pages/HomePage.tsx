@@ -1,26 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, BookOpenText, ChartNoAxesCombined, Heart, Mail, Search, Sparkles, Target, Zap } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpenText, Brain, ChartNoAxesCombined, LibraryBig, Mail, Search, Sparkles, Target, Zap } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+import { ReviewService } from '../services/reviewService';
+import type { ReviewSummary } from '../types/review';
+import { getUserPreferences, PREFERENCES_EVENT } from '../utils/userPreferences';
 
 const features = [
   { icon: BookOpenText, title: 'Curated practice', copy: 'Focused SAT sets that adapt around what you have already completed.', path: '/sat-practice', tone: 'bg-teal-800 text-white' },
   { icon: ChartNoAxesCombined, title: 'Visible progress', copy: 'See accuracy, activity and domain performance without digging through data.', path: '/dashboard', tone: 'bg-[#e96b4d] text-white' },
   { icon: Search, title: 'Vocabulary studio', copy: 'Look up, understand and save unfamiliar words while you study.', path: '/dictionary', tone: 'bg-[#edd6a8] text-stone-900' },
-  { icon: Heart, title: 'Saved review', copy: 'Return to the words and questions that deserve another look.', path: '/favorite-questions', tone: 'bg-stone-800 text-white' },
+  { icon: Brain, title: 'Memory review', copy: 'Revisit each question when forgetting is most likely, not at random.', path: '/review', tone: 'bg-stone-800 text-white' },
+  { icon: LibraryBig, title: 'Trusted resources', copy: 'Launch official and carefully licensed learning sources without copied content.', path: '/resources', tone: 'bg-[#d7e7e3] text-teal-950' },
 ];
 
 const studyPlans = [
   { key: 'quick', label: 'I have 5 minutes', title: 'Take one Daily Quick question', copy: 'A random unanswered question, with immediate marking and no setup.', path: '/sat-single', cta: 'Give me one question' },
   { key: 'practice', label: 'I have 15+ minutes', title: 'Build a focused practice set', copy: 'Choose a domain and session length for a more deliberate block of work.', path: '/sat-practice', cta: 'Set up practice' },
-  { key: 'review', label: 'I want to review', title: 'Revisit your saved library', copy: 'Open the questions you marked for another attempt and turn weak spots into wins.', path: '/favorite-questions', cta: 'Open saved questions' },
+  { key: 'review', label: 'I want to remember', title: 'Clear today’s memory queue', copy: 'Review questions at expanding intervals so corrected mistakes have a better chance to stick.', path: '/review', cta: 'Open memory review' },
 ];
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState(studyPlans[0]);
+  const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(null);
+  const [preferences, setPreferences] = useState(getUserPreferences);
+  const testDate = preferences.testDate ? new Date(`${preferences.testDate}T12:00:00`) : null;
+  const daysUntilTest = testDate ? Math.max(0, Math.ceil((testDate.getTime() - Date.now()) / 86400000)) : null;
+
+  useEffect(() => {
+    ReviewService.getSummary().then(setReviewSummary).catch(() => undefined);
+    const updatePreferences = () => setPreferences(getUserPreferences());
+    window.addEventListener(PREFERENCES_EVENT, updatePreferences);
+    return () => window.removeEventListener(PREFERENCES_EVENT, updatePreferences);
+  }, []);
 
   return (
     <div className="page-shell overflow-hidden">
@@ -30,12 +45,13 @@ export default function HomePage() {
           <h1 className="page-title mt-5 max-w-4xl">Study with <em className="font-light text-teal-800">direction</em>, not just repetition.</h1>
           <p className="page-subtitle mt-7 max-w-2xl">A calmer, clearer place to practise questions, understand your performance and turn new vocabulary into lasting knowledge.</p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Button size="lg" onClick={() => navigate('/sat-practice')}>Start a practice set <ArrowUpRight size={18} /></Button>
+            <Button size="lg" onClick={() => navigate(reviewSummary?.dueNow ? '/review' : '/sat-practice')}>{reviewSummary?.dueNow ? `Review ${reviewSummary.dueNow} due` : 'Start a practice set'} <ArrowUpRight size={18} /></Button>
             <Button size="lg" variant="secondary" onClick={() => navigate('/dashboard')}>View my progress</Button>
           </div>
           <div className="mt-12 flex flex-wrap gap-x-8 gap-y-4 border-t border-stone-900/10 pt-6 text-sm text-stone-600">
             <span><strong className="text-stone-900">One account</strong> across every mode</span>
-            <span><strong className="text-stone-900">Live accuracy</strong> from saved attempts</span>
+            <span><strong className="text-stone-900">Memory timing</strong> from every answer</span>
+            <span><strong className="text-stone-900">{daysUntilTest === null ? 'Set a test date' : `${daysUntilTest} days`}</strong> {daysUntilTest === null ? 'in profile settings' : 'to your target'}</span>
           </div>
         </motion.div>
 
@@ -50,7 +66,7 @@ export default function HomePage() {
               </div>
               <p className="mt-16 font-display text-4xl font-medium leading-tight">Small sessions.<br />Measurable momentum.</p>
               <div className="mt-10 grid grid-cols-3 gap-3">
-                {[['10', 'questions'], ['1', 'domain'], ['~12', 'minutes']].map(([value, label]) => (
+                {[[String(reviewSummary?.dueNow ?? 0), 'due now'], [String(preferences.dailyReviewGoal), 'daily goal'], [String(Math.max(1, Math.ceil((reviewSummary?.dueNow ?? 0) * 1.5))), 'minutes']].map(([value, label]) => (
                   <div key={label} className="rounded-2xl border border-white/10 bg-white/7 p-4">
                     <strong className="block text-xl">{value}</strong><span className="text-[10px] uppercase tracking-wider text-teal-50/45">{label}</span>
                   </div>
@@ -61,7 +77,7 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      <section className="grid gap-4 pb-8 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 pb-8 md:grid-cols-2 xl:grid-cols-5">
         {features.map(({ icon: Icon, title, copy, path, tone }, index) => (
           <motion.button key={title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .25 + index * .08 }} onClick={() => navigate(path)} className="group text-left">
             <Card className="h-full p-6 transition-transform duration-300 group-hover:-translate-y-1">

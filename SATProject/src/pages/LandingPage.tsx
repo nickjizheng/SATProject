@@ -4,24 +4,25 @@ import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowRight,
   BarChart3,
+  Brain,
   BookOpenCheck,
-  BookmarkCheck,
   Check,
   CheckCircle2,
   CircleUserRound,
   GraduationCap,
   Mail,
   Menu,
+  LibraryBig,
   Search,
   Sparkles,
   Target,
   X,
-  Zap,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { cn } from '../lib/utils';
 import Brand from '../components/Brand';
+import TrademarkNotice from '../components/TrademarkNotice';
 
 const capabilities = [
   {
@@ -32,18 +33,18 @@ const capabilities = [
     detail: 'Practice sets remember what you have answered, so your time goes toward new material rather than accidental repeats.',
   },
   {
-    icon: Zap,
+    icon: Brain,
     number: '02',
-    title: 'Daily quick practice',
-    copy: 'Open one random unanswered question from any SAT domain when you only have a few minutes or want a fast daily study habit.',
-    detail: 'It shares answer history with full practice mode, so quick sessions never recycle work you have already completed.',
+    title: 'Memory-timed review',
+    copy: 'Questions return on expanding intervals inspired by the Ebbinghaus forgetting curve, with mistakes scheduled sooner.',
+    detail: 'A due queue, retention estimate and seven-day forecast turn every answer into a practical memory plan.',
   },
   {
     icon: BarChart3,
     number: '03',
-    title: 'Progress you can read',
-    copy: 'See answered questions, accuracy, recent activity, study streaks and performance broken down by SAT domain.',
-    detail: 'Your dashboard turns every attempt into a practical signal about where to focus next.',
+    title: 'Adaptive next steps',
+    copy: 'See accuracy, recent activity, study streaks and performance by domain, then launch a set around the weakest area.',
+    detail: 'Your dashboard turns every attempt into a clear recommendation instead of another generic question set.',
   },
   {
     icon: Search,
@@ -53,11 +54,11 @@ const capabilities = [
     detail: 'Useful results can be saved directly into a personal vocabulary collection for later review.',
   },
   {
-    icon: BookmarkCheck,
+    icon: LibraryBig,
     number: '05',
-    title: 'A personal study library',
-    copy: 'Save difficult questions and valuable words to revisit them from one organized, account-specific collection.',
-    detail: 'Saved questions remain interactive, so you can practise them again instead of storing static screenshots.',
+    title: 'Trusted resource hub',
+    copy: 'Launch official publisher-hosted practice and carefully licensed enrichment from one transparent source library.',
+    detail: 'External questions stay on their owners’ platforms; SAT-Buddy does not scrape or rehost protected practice content.',
   },
   {
     icon: CircleUserRound,
@@ -130,11 +131,11 @@ export default function LandingPage() {
             <Card className="overflow-hidden bg-[#173c39] p-5 text-white sm:p-8">
               <div className="flex items-center justify-between"><span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[.15em] text-white/60">A connected study loop</span><BookOpenCheck className="text-[#f1b49f]" /></div>
               <div className="mt-12 space-y-3">
-                {[['1', 'Practise a focused question set', 'Answer choices are marked immediately.'], ['2', 'Understand the feedback', 'See the correct answer and explanation.'], ['3', 'Use your progress', 'Your dashboard updates from the same saved attempt.']].map(([number, title, copy]) => (
+                {[['1', 'Practise a focused question set', 'Only quality-screened questions enter a set.'], ['2', 'Understand the feedback', 'See the correct answer and explanation.'], ['3', 'Return at the right time', 'The memory queue expands or shortens the next interval.']].map(([number, title, copy]) => (
                   <div key={number} className="grid grid-cols-[42px_1fr] gap-4 rounded-2xl border border-white/10 bg-white/[.055] p-4"><span className="grid size-10 place-items-center rounded-xl bg-[#f4d8cc] font-display text-xl text-[#a83f2b]">{number}</span><div><strong className="text-sm">{title}</strong><p className="mt-1 text-xs leading-5 text-white/48">{copy}</p></div></div>
                 ))}
               </div>
-              <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-6 text-center">{[['8', 'SAT domains'], ['2', 'practice modes'], ['1', 'synced history']].map(([value, label]) => <div key={label}><strong className="block text-2xl">{value}</strong><span className="text-[9px] uppercase tracking-wider text-white/40">{label}</span></div>)}</div>
+              <div className="mt-6 grid grid-cols-3 gap-3 border-t border-white/10 pt-6 text-center">{[['8', 'SAT domains'], ['1', 'quality gate'], ['∞', 'review cycles']].map(([value, label]) => <div key={label}><strong className="block text-2xl">{value}</strong><span className="text-[9px] uppercase tracking-wider text-white/40">{label}</span></div>)}</div>
             </Card>
           </motion.div>
         </section>
@@ -169,7 +170,7 @@ export default function LandingPage() {
         </section>
 
         <section id="workflow" className="bg-[#173c39] px-5 py-24 text-white sm:px-8 lg:py-32">
-          <div className="mx-auto max-w-[1280px]"><div className="grid gap-10 lg:grid-cols-[.7fr_1.3fr]"><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#f1b49f]">How it works</p><h2 className="mt-4 font-display text-5xl font-medium leading-none tracking-[-.04em]">From first answer to next focus.</h2></div><div className="grid gap-4 sm:grid-cols-3">{[['01', 'Create your workspace', 'Verify one account so attempts and saved items remain private and connected.'], ['02', 'Practise your way', 'Choose full sets or single questions, with optional domain targeting.'], ['03', 'Return with context', 'Use your dashboard and saved library to decide what deserves attention next.']].map(([number, title, copy]) => <div key={number} className="rounded-[1.6rem] border border-white/10 bg-white/[.055] p-6"><span className="font-display text-3xl text-[#f1b49f]">{number}</span><h3 className="mt-10 font-display text-2xl font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-white/50">{copy}</p></div>)}</div></div></div>
+          <div className="mx-auto max-w-[1280px]"><div className="grid gap-10 lg:grid-cols-[.7fr_1.3fr]"><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-[#f1b49f]">How it works</p><h2 className="mt-4 font-display text-5xl font-medium leading-none tracking-[-.04em]">From first answer to lasting recall.</h2></div><div className="grid gap-4 sm:grid-cols-3">{[['01', 'Answer once', 'Choose a focused set, Smart focus, or a single Daily Quick question.'], ['02', 'Learn from feedback', 'Your result becomes an append-only attempt and starts a personal review schedule.'], ['03', 'Return on cue', 'Correct recall lengthens the gap; a miss comes back quickly so the correction can stick.']].map(([number, title, copy]) => <div key={number} className="rounded-[1.6rem] border border-white/10 bg-white/[.055] p-6"><span className="font-display text-3xl text-[#f1b49f]">{number}</span><h3 className="mt-10 font-display text-2xl font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-white/50">{copy}</p></div>)}</div></div></div>
         </section>
 
         <section id="about" className="px-5 py-24 sm:px-8 lg:py-32">
@@ -195,7 +196,7 @@ export default function LandingPage() {
         <section className="px-5 py-24 sm:px-8 lg:py-32"><Card className="mx-auto max-w-[1280px] overflow-hidden bg-[#e96b4d] p-8 text-white sm:p-14"><div className="grid items-end gap-8 lg:grid-cols-[1fr_auto]"><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-white/60">Ready when you are</p><h2 className="mt-4 max-w-3xl font-display text-4xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Turn the next question into useful progress.</h2><p className="mt-6 max-w-xl text-white/70">Create an account to save attempts, synchronize practice modes and build your personal SAT study library.</p></div><div className="marketing-cta-actions flex flex-wrap gap-3"><Button size="lg" className="bg-[#173c39] hover:bg-[#24534f]" onClick={() => navigate('/auth?mode=register')}>Create my account <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=login')}>Log in</Button></div></div></Card></section>
       </main>
 
-      <footer className="border-t border-stone-900/10 px-5 py-8 sm:px-8"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-4 text-xs text-stone-500 sm:flex-row"><span className="font-bold text-stone-700">SAT-Buddy · By students, for students.</span><a href="mailto:nick.jizheng.li@gmail.com" className="hover:text-[#123d3a]">Nick Jizheng Li · nick.jizheng.li@gmail.com</a></div></footer>
+      <footer className="border-t border-stone-900/10 px-5 py-8 sm:px-8"><div className="mx-auto max-w-[1440px]"><TrademarkNotice className="mb-5" /><div className="flex flex-col justify-between gap-4 text-xs text-stone-500 sm:flex-row"><span className="font-bold text-stone-700">SAT-Buddy · By students, for students.</span><a href="mailto:nick.jizheng.li@gmail.com" className="hover:text-[#123d3a]">Nick Jizheng Li · nick.jizheng.li@gmail.com</a></div></div></footer>
     </div>
   );
 }

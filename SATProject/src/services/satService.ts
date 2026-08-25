@@ -1,21 +1,35 @@
-import type { SatQuestion, AnswerRequest, AnswerResponse, ApiResponse, NextQuestionRequest, NextQuestionResponse } from '../types/sat';
+import type { SatQuestion, AnswerRequest, AnswerResponse, ApiResponse, NextQuestionRequest, NextQuestionResponse, SatBankSummary } from '../types/sat';
 import { API_BASE_URL as API_ROOT } from './apiConfig';
 
 const API_BASE_URL = `${API_ROOT}/sat`;
 const DASHBOARD_API_BASE_URL = `${API_ROOT}/dashboard`;
 
+interface AnswerSummaryPayload {
+  answeredQuestions?: number;
+  correctAnswers?: number;
+}
+
 const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  let userId: string | undefined;
   const headers: Record<string, string> = {};
+
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr) as { id?: string | number };
+      if (user.id !== undefined && user.id !== null) userId = String(user.id);
+    } catch {
+      // The bearer token remains authoritative; malformed local profile data should not crash public practice reads.
+    }
+  }
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  if (user?.id) {
-    headers['X-User-Id'] = user.id.toString();
+  if (userId) {
+    headers['X-User-Id'] = userId;
   }
 
   return headers;
@@ -38,9 +52,9 @@ export class SatService {
       headers,
     });
 
-    const result: ApiResponse<any> = await response.json();
+    const result: ApiResponse<AnswerSummaryPayload> = await response.json();
 
-    if (result.code !== 200 || !result.data) {
+    if (!response.ok || result.code !== 200 || !result.data) {
       throw new Error(result.message || 'Failed to fetch SAT answer summary.');
     }
 
@@ -113,6 +127,17 @@ export class SatService {
       console.error('Failed to get domains:', error);
       throw error;
     }
+  }
+
+  static async getBankSummary(): Promise<SatBankSummary> {
+    const response = await fetch(`${API_BASE_URL}/bank-summary`);
+    const result: ApiResponse<SatBankSummary> = await response.json();
+
+    if (!response.ok || result.code !== 200 || !result.data) {
+      throw new Error(result.message || 'Failed to fetch question-bank details.');
+    }
+
+    return result.data;
   }
 
   /**
@@ -209,7 +234,7 @@ export class SatService {
 
       const result: ApiResponse<AnswerResponse> = await response.json();
 
-      if (result.code === 200 && result.data) {
+      if (response.ok && result.code === 200 && result.data) {
         return result.data;
       } else {
         throw new Error(result.message || 'Failed to submit and record your answer.');

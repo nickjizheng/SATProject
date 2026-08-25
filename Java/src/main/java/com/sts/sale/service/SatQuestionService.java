@@ -1,259 +1,410 @@
 package com.sts.sale.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.sts.sale.dto.*;
+import com.sts.sale.dto.AnswerRequest;
+import com.sts.sale.dto.AnswerResponse;
+import com.sts.sale.dto.NextQuestionRequest;
+import com.sts.sale.dto.NextQuestionResponse;
+import com.sts.sale.dto.QuestionBankBreakdown;
+import com.sts.sale.dto.QuestionBankSummary;
+import com.sts.sale.dto.SatQuestionResponse;
+import com.sts.sale.mapper.QuestionAttemptMapper;
 import com.sts.sale.mapper.SatQuestionMapper;
 import com.sts.sale.mapper.UserAnswerRecordMapper;
+import com.sts.sale.mapper.UserQuestionReviewStateMapper;
+import com.sts.sale.model.QuestionAttempt;
 import com.sts.sale.model.SatQuestion;
 import com.sts.sale.model.UserAnswerRecord;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.sts.sale.model.UserQuestionReviewState;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-/**
- * SAT题目服务类
- */
+/** SAT practice, scoring, attempt history, and review-schedule orchestration. */
 @Service
 public class SatQuestionService {
 
-    @Autowired
-    private SatQuestionMapper satQuestionMapper;
+    private static final int MAX_BATCH_SIZE = 100;
 
-    @Autowired
-    private UserAnswerRecordMapper userAnswerRecordMapper;
+    private final SatQuestionMapper satQuestionMapper;
+    private final UserAnswerRecordMapper userAnswerRecordMapper;
+    private final QuestionAttemptMapper questionAttemptMapper;
+    private final UserQuestionReviewStateMapper reviewStateMapper;
+    private final ReviewIntervalPolicy intervalPolicy;
 
-    /**
-     * 获取随机题目
-     * @param count 题目数量
-     * @return 题目列表
-     */
-    public List<SatQuestionResponse> getRandomQuestions(int count, Integer userId) {
-        List<SatQuestion> questions;
-        if (userId != null) {
-            questions = userAnswerRecordMapper.getUnansweredQuestionsForUser(userId, null, count);
-        } else {
-            questions = satQuestionMapper.getRandomQuestions(count);
-        }
-
-        return questions.stream()
-                .map(SatQuestionResponse::fromSatQuestion)
-                .collect(Collectors.toList());
+    public SatQuestionService(SatQuestionMapper satQuestionMapper,
+                              UserAnswerRecordMapper userAnswerRecordMapper,
+                              QuestionAttemptMapper questionAttemptMapper,
+                              UserQuestionReviewStateMapper reviewStateMapper,
+                              ReviewIntervalPolicy intervalPolicy) {
+        this.satQuestionMapper = satQuestionMapper;
+        this.userAnswerRecordMapper = userAnswerRecordMapper;
+        this.questionAttemptMapper = questionAttemptMapper;
+        this.reviewStateMapper = reviewStateMapper;
+        this.intervalPolicy = intervalPolicy;
     }
 
-    /**
-     * 根据领域获取题目
-     * @param domain 题目领域
-     * @param count 题目数量
-     * @return 题目列表
-     */
-    public List<SatQuestionResponse> getQuestionsByDomain(String domain, int count, Integer userId) {
-        List<SatQuestion> questions;
-        if (userId != null) {
-            questions = userAnswerRecordMapper.getUnansweredQuestionsForUser(userId, domain, count);
-        } else {
-            questions = satQuestionMapper.getQuestionsByDomain(domain, count);
-        }
-
-        return questions.stream()
-                .map(SatQuestionResponse::fromSatQuestion)
-                .collect(Collectors.toList());
+    public List<SatQuestionResponse> getRandomQuestions(int count, Long userId) {
+        int limit = normalizeLimit(count);
+        List<SatQuestion> questions = userId == null
+            ? satQuestionMapper.getRandomQuestions(limit)
+            : satQuestionMapper.getUnansweredForUser(toLegacyUserId(userId), null, limit);
+        return toResponses(questions);
     }
 
-    /**
-     * 获取所有领域
-     * @return 领域列表
-     */
+    public List<SatQuestionResponse> getQuestionsByDomain(String domain, int count, Long userId) {
+        int limit = normalizeLimit(count);
+        String normalizedDomain = normalize(domain);
+        if (normalizedDomain == null) {
+            throw new IllegalArgumentException("A question domain is required.");
+        }
+
+        List<SatQuestion> questions = userId == null
+            ? satQuestionMapper.getQuestionsByDomain(normalizedDomain, limit)
+            : satQuestionMapper.getUnansweredForUser(
+                toLegacyUserId(userId), normalizedDomain, limit);
+        return toResponses(questions);
+    }
+
     public List<String> getAllDomains() {
         return satQuestionMapper.getAllDomains();
     }
 
-    /**
-     * 根据ID获取题目
-     * @param id 题目ID
-     * @return 题目
-     */
+    /** Returns only questions admitted by the bank's quality gate. */
     public SatQuestionResponse getQuestionById(Integer id) {
-        SatQuestion question = satQuestionMapper.selectById(id);
-        if (question == null) {
-            return null;
+        SatQuestion question = satQuestionMapper.selectUsableById(id);
+        return question == null ? null : SatQuestionResponse.fromSatQuestion(question);
+    }
+
+    /** Scores only questions admitted by the bank's quality gate. */
+    public AnswerResponse checkAnswer(AnswerRequest request) {
+        SatQuestion question = requireUsableQuestion(request.getQuestionId());
+        return mark(question, normalizeAnswer(request.getAnswer()));
+    }
+
+    public NextQuestionResponse getNextQuestion(NextQuestionRequest request, Long userId) {
+        String domain = normalize(request.getDomain());
+        String sessionId = normalize(request.getSessionId());
+        if (userId == null && sessionId == null) {
+            throw new IllegalArgumentException("A practice session is required.");
         }
-        return SatQuestionResponse.fromSatQuestion(question);
+
+        List<SatQuestion> unansweredQuestions;
+        long answeredCount;
+        if (userId != null) {
+            Integer legacyUserId = toLegacyUserId(userId);
+            unansweredQuestions = satQuestionMapper.getUnansweredForUser(legacyUserId, domain, 1);
+            answeredCount = satQuestionMapper.countAnsweredForUser(legacyUserId, domain);
+        } else {
+            unansweredQuestions = satQuestionMapper.getUnansweredForSession(sessionId, domain, 1);
+            answeredCount = satQuestionMapper.countAnsweredForSession(sessionId, domain);
+        }
+
+        NextQuestionResponse response = new NextQuestionResponse();
+        response.setQuestion(unansweredQuestions.isEmpty()
+            ? null
+            : SatQuestionResponse.fromSatQuestion(unansweredQuestions.get(0)));
+        response.setHasMoreQuestions(!unansweredQuestions.isEmpty());
+        response.setAnsweredCount(Math.toIntExact(answeredCount));
+        response.setTotalCount(Math.toIntExact(satQuestionMapper.countUsableQuestions(domain)));
+        return response;
     }
 
     /**
-     * Marks a submitted answer against the authoritative answer key.
-     * @param request the submitted question ID and answer
-     * @return the marking result shown to the student
+     * Appends an immutable attempt, maintains the legacy latest-answer view, and
+     * advances the signed-in student's Ebbinghaus-inspired review schedule.
+     * A unique client submission ID makes retries safe.
      */
-    public AnswerResponse checkAnswer(AnswerRequest request) {
-        // Load the full question so marking always uses the server-side answer key.
-        SatQuestion question = satQuestionMapper.selectById(request.getQuestionId());
+    @Transactional
+    public AnswerResponse submitAnswerWithRecord(AnswerRequest request, Long userId) {
+        String sessionId = normalize(request.getSessionId());
+        if (userId == null && sessionId == null) {
+            throw new IllegalArgumentException("A practice session is required for anonymous answers.");
+        }
+        if (request.getResponseTimeMs() != null && request.getResponseTimeMs() < 0) {
+            throw new IllegalArgumentException("Response time cannot be negative.");
+        }
+
+        SatQuestion question = requireUsableQuestion(request.getQuestionId());
+        String answer = normalizeAnswer(request.getAnswer());
+        String submissionId = normalize(request.getSubmissionId());
+        if (submissionId == null) submissionId = UUID.randomUUID().toString();
+
+        QuestionAttempt existingAttempt = questionAttemptMapper.findBySubmissionId(submissionId);
+        if (existingAttempt != null) {
+            return responseForExistingAttempt(existingAttempt, question, answer, userId, sessionId);
+        }
+
+        Integer legacyUserId = userId == null ? null : toLegacyUserId(userId);
+        UserQuestionReviewState currentState = userId == null
+            ? null
+            : reviewStateMapper.findForUpdate(userId, request.getQuestionId());
+
+        LocalDateTime submittedAt = LocalDateTime.now();
+        AnswerResponse response = mark(question, answer);
+        ReviewSchedule schedule = userId == null
+            ? null
+            : intervalPolicy.defaultSchedule(
+                currentState == null ? null : currentState.getStage(),
+                response.getIsCorrect(),
+                submittedAt
+            );
+
+        QuestionAttempt attempt = new QuestionAttempt();
+        attempt.setSubmissionId(submissionId);
+        attempt.setUserId(userId);
+        attempt.setSessionId(sessionId);
+        attempt.setQuestionId(request.getQuestionId());
+        attempt.setUserAnswer(answer);
+        attempt.setIsCorrect(response.getIsCorrect());
+        attempt.setStudyMode(normalize(request.getStudyMode()));
+        attempt.setResponseTimeMs(request.getResponseTimeMs());
+        attempt.setStageBefore(currentState == null ? null : currentState.getStage());
+        attempt.setDefaultStage(schedule == null ? null : schedule.stage());
+        attempt.setDefaultNextReviewAt(schedule == null ? null : schedule.nextReviewAt());
+        attempt.setSubmittedAt(submittedAt);
+
+        if (questionAttemptMapper.insertIfAbsent(attempt) != 1) {
+            QuestionAttempt concurrentAttempt = questionAttemptMapper.findBySubmissionId(submissionId);
+            if (concurrentAttempt == null) {
+                throw new IllegalStateException("The answer could not be saved. Please retry.");
+            }
+            return responseForExistingAttempt(
+                concurrentAttempt, question, answer, userId, sessionId);
+        }
+
+        saveLegacyLatestAnswer(
+            request.getQuestionId(), answer, response.getIsCorrect(), submittedAt,
+            sessionId, legacyUserId);
+
+        if (userId != null) {
+            saveReviewState(
+                currentState, userId, request.getQuestionId(), response.getIsCorrect(),
+                submittedAt, attempt.getId(), schedule);
+            applySchedule(response, schedule.stage(), schedule.nextReviewAt(), schedule.interval());
+        }
+
+        return response;
+    }
+
+    /** Rebuilds a score response only if the recorded question remains usable. */
+    public AnswerResponse getRecordedAnswer(Integer questionId, Long userId, String sessionId) {
+        UserAnswerRecord record;
+        if (userId != null) {
+            record = userAnswerRecordMapper.findLatestByUserIdAndQuestionId(
+                toLegacyUserId(userId), questionId);
+        } else {
+            String normalizedSessionId = normalize(sessionId);
+            if (normalizedSessionId == null) return null;
+            record = userAnswerRecordMapper.findLatestBySessionIdAndQuestionId(
+                normalizedSessionId, questionId);
+        }
+        if (record == null) return null;
+
+        SatQuestion question = requireUsableQuestion(questionId);
+        AnswerResponse response = mark(question, normalizeAnswer(record.getUserAnswer()));
+        if (userId != null) {
+            UserQuestionReviewState state = reviewStateMapper.find(userId, questionId);
+            if (state != null) {
+                Duration interval = durationBetween(
+                    state.getLastAnsweredAt(), state.getNextReviewAt());
+                applySchedule(response, state.getStage(), state.getNextReviewAt(), interval);
+            }
+        }
+        return response;
+    }
+
+    public QuestionBankSummary getQuestionBankSummary() {
+        QuestionBankSummary summary = new QuestionBankSummary();
+        summary.setTotalQuestions(satQuestionMapper.countAllQuestions());
+        summary.setUsableQuestions(satQuestionMapper.countUsableQuestions(null));
+        summary.setQuarantinedQuestions(satQuestionMapper.countQuarantinedQuestions());
+        summary.setDuplicateQuestions(satQuestionMapper.countDuplicateQuestions());
+        summary.setByDomain(toBreakdownMap(satQuestionMapper.getUsableCountsByDomain()));
+        summary.setByQualityStatus(toBreakdownMap(satQuestionMapper.getCountsByQualityStatus()));
+        return summary;
+    }
+
+    public String generateSessionId() {
+        return UUID.randomUUID().toString();
+    }
+
+    private SatQuestion requireUsableQuestion(Integer questionId) {
+        SatQuestion question = satQuestionMapper.selectUsableById(questionId);
         if (question == null) {
-            throw new RuntimeException("题目不存在");
+            throw new IllegalArgumentException(
+                "This question is unavailable because it did not pass the quality screen.");
         }
+        getVerifiedAnswerKey(question);
+        return question;
+    }
 
+    private AnswerResponse mark(SatQuestion question, String submittedAnswer) {
         AnswerResponse response = new AnswerResponse();
-        response.setQuestionId(request.getQuestionId());
-        response.setUserAnswer(request.getAnswer());
-
-        String correctAnswer = getVerifiedAnswerKey(question);
-        String submittedAnswer = request.getAnswer().trim().toUpperCase();
-        if (!submittedAnswer.matches("[A-D]")) {
-            throw new IllegalArgumentException("Answer must be A, B, C, or D.");
-        }
-
-        // Use one comparison result for both the response and persisted attempt.
-        response.setCorrectAnswer(correctAnswer);
+        response.setQuestionId(question.getId());
         response.setUserAnswer(submittedAnswer);
-        response.setIsCorrect(correctAnswer.equals(submittedAnswer));
+        response.setCorrectAnswer(getVerifiedAnswerKey(question));
+        response.setIsCorrect(response.getCorrectAnswer().equals(submittedAnswer));
         response.setExplanation(question.getQuestionExplanation());
-
         return response;
     }
 
     private String getVerifiedAnswerKey(SatQuestion question) {
-        String answerKey = question.getCorrectAnswer();
-        if (answerKey == null || !answerKey.trim().toUpperCase().matches("[A-D]")) {
+        String answerKey = normalize(question.getCorrectAnswer());
+        if (answerKey == null || !answerKey.toUpperCase().matches("[A-D]")) {
             throw new IllegalStateException(
-                "This question does not have a verified answer key and cannot be scored."
-            );
+                "This question does not have a verified answer key and cannot be scored.");
         }
-        return answerKey.trim().toUpperCase();
+        return answerKey.toUpperCase();
     }
 
-    /**
-     * 获取下一道未做过的题目
-     * @param request 请求参数
-     * @return 下一题响应
-     */
-    public NextQuestionResponse getNextQuestion(NextQuestionRequest request, Integer userId) {
-        List<SatQuestion> unansweredQuestions;
+    private String normalizeAnswer(String answer) {
+        String normalized = normalize(answer);
+        if (normalized == null || !normalized.toUpperCase().matches("[A-D]")) {
+            throw new IllegalArgumentException("Answer must be A, B, C, or D.");
+        }
+        return normalized.toUpperCase();
+    }
+
+    private AnswerResponse responseForExistingAttempt(QuestionAttempt attempt,
+                                                       SatQuestion question,
+                                                       String submittedAnswer,
+                                                       Long userId,
+                                                       String sessionId) {
+        if (!question.getId().equals(attempt.getQuestionId())
+                || !submittedAnswer.equals(attempt.getUserAnswer())) {
+            throw new IllegalArgumentException(
+                "This submission ID was already used for a different answer.");
+        }
+
         if (userId != null) {
-            unansweredQuestions = userAnswerRecordMapper.getUnansweredQuestionsForUser(
-                userId,
-                request.getDomain(),
-                1
+            if (!userId.equals(attempt.getUserId())) {
+                throw new IllegalArgumentException(
+                    "This submission ID belongs to a different account.");
+            }
+        } else if (attempt.getUserId() != null
+                || !Objects.equals(sessionId, normalize(attempt.getSessionId()))) {
+            throw new IllegalArgumentException(
+                "This submission ID belongs to a different practice session.");
+        }
+
+        AnswerResponse response = mark(question, attempt.getUserAnswer());
+        if (attempt.getUserId() != null && attempt.getDefaultStage() != null) {
+            Duration interval = durationBetween(
+                attempt.getSubmittedAt(), attempt.getDefaultNextReviewAt());
+            applySchedule(
+                response,
+                attempt.getDefaultStage(),
+                attempt.getDefaultNextReviewAt(),
+                interval
             );
-        } else {
-            unansweredQuestions = userAnswerRecordMapper.getUnansweredQuestions(
-                request.getSessionId(),
-                request.getDomain(),
-                1
-            );
         }
-
-        NextQuestionResponse response = new NextQuestionResponse();
-
-        if (unansweredQuestions.isEmpty()) {
-            // 没有未做过的题目了
-            response.setQuestion(null);
-            response.setHasMoreQuestions(false);
-        } else {
-            // 有未做过的题目
-            SatQuestion question = unansweredQuestions.get(0);
-            response.setQuestion(SatQuestionResponse.fromSatQuestion(question));
-            response.setHasMoreQuestions(true);
-        }
-
-        List<Integer> answeredIds = userId != null
-            ? userAnswerRecordMapper.getAnsweredQuestionIdsByUser(userId)
-            : userAnswerRecordMapper.getAnsweredQuestionIds(request.getSessionId());
-        response.setAnsweredCount(answeredIds.size());
-
-        // 统计总题目数量
-        QueryWrapper<SatQuestion> queryWrapper = new QueryWrapper<>();
-        queryWrapper.apply("UPPER(TRIM(correct_answer)) IN ('A', 'B', 'C', 'D')");
-        if (request.getDomain() != null && !request.getDomain().trim().isEmpty()) {
-            queryWrapper.eq("domain", request.getDomain());
-        }
-        Long totalCount = satQuestionMapper.selectCount(queryWrapper);
-        response.setTotalCount(totalCount.intValue());
-
         return response;
     }
 
-    /**
-     * Marks an answer and records the latest attempt for synchronization.
-     * @param request the submitted answer and optional practice session
-     * @param userId the authenticated student, or null for an anonymous session
-     * @return the marking result shown to the student
-     */
-    public AnswerResponse submitAnswerWithRecord(AnswerRequest request, Integer userId) {
-        // Mark first so the stored correctness matches the result returned to the UI.
-        AnswerResponse answerResponse = checkAnswer(request);
-
-        // Reuse the account/session record so repeat attempts update instead of duplicate.
-        UserAnswerRecord record = findExistingAnswerRecord(request, userId);
-        boolean isNewRecord = record == null;
-
-        if (isNewRecord) {
+    private void saveLegacyLatestAnswer(Integer questionId,
+                                        String answer,
+                                        Boolean isCorrect,
+                                        LocalDateTime answeredAt,
+                                        String sessionId,
+                                        Integer userId) {
+        UserAnswerRecord record = userId == null
+            ? userAnswerRecordMapper.findLatestBySessionIdAndQuestionId(sessionId, questionId)
+            : userAnswerRecordMapper.findLatestByUserIdAndQuestionId(userId, questionId);
+        boolean insert = record == null;
+        if (insert) {
             record = new UserAnswerRecord();
-            record.setQuestionId(request.getQuestionId());
+            record.setQuestionId(questionId);
         }
-
-        // Persist the owner, selected answer, result, timestamp, and practice session.
         record.setUserId(userId);
-        record.setUserAnswer(request.getAnswer());
-        record.setIsCorrect(answerResponse.getIsCorrect());
-        record.setAnsweredAt(LocalDateTime.now());
-        record.setSessionId(request.getSessionId());
-
-        // Insert a first attempt or update the shared record used by both practice modes.
-        if (isNewRecord) {
-            userAnswerRecordMapper.insert(record);
-        } else {
-            userAnswerRecordMapper.updateById(record);
-        }
-
-        return answerResponse;
+        record.setSessionId(sessionId);
+        record.setUserAnswer(answer);
+        record.setIsCorrect(isCorrect);
+        record.setAnsweredAt(answeredAt);
+        if (insert) userAnswerRecordMapper.insert(record);
+        else userAnswerRecordMapper.updateById(record);
     }
 
-    /**
-     * Rebuilds the marking response for a previously persisted attempt.
-     */
-    public AnswerResponse getRecordedAnswer(Integer questionId, Integer userId, String sessionId) {
-        UserAnswerRecord record;
-
-        if (userId != null) {
-            record = userAnswerRecordMapper.findLatestByUserIdAndQuestionId(userId, questionId);
-        } else if (sessionId != null && !sessionId.trim().isEmpty()) {
-            record = userAnswerRecordMapper.findLatestBySessionIdAndQuestionId(sessionId, questionId);
-        } else {
-            return null;
+    private void saveReviewState(UserQuestionReviewState state,
+                                 Long userId,
+                                 Integer questionId,
+                                 boolean correct,
+                                 LocalDateTime submittedAt,
+                                 Long attemptId,
+                                 ReviewSchedule schedule) {
+        boolean firstAttempt = state == null;
+        if (firstAttempt) {
+            state = new UserQuestionReviewState();
+            state.setUserId(userId);
+            state.setQuestionId(questionId);
         }
-
-        if (record == null) {
-            return null;
-        }
-
-        AnswerRequest recordedRequest = new AnswerRequest();
-        recordedRequest.setQuestionId(questionId);
-        recordedRequest.setAnswer(record.getUserAnswer());
-        recordedRequest.setSessionId(record.getSessionId());
-        return checkAnswer(recordedRequest);
+        int previousStreak = value(state.getCorrectStreak());
+        int previousLapses = value(state.getLapseCount());
+        int previousAttempts = value(state.getTotalAttempts());
+        state.setStage(schedule.stage());
+        state.setNextReviewAt(schedule.nextReviewAt());
+        state.setLastAnsweredAt(submittedAt);
+        state.setLastCorrect(correct);
+        state.setCorrectStreak(correct ? previousStreak + 1 : 0);
+        state.setLapseCount(previousLapses + (correct ? 0 : 1));
+        state.setTotalAttempts(firstAttempt ? 1 : previousAttempts + 1);
+        state.setLastAttemptId(attemptId);
+        state.setLastGrade(correct ? "GOOD" : "AGAIN");
+        reviewStateMapper.save(state);
     }
 
-    private UserAnswerRecord findExistingAnswerRecord(AnswerRequest request, Integer userId) {
-        if (userId != null) {
-            return userAnswerRecordMapper.findLatestByUserIdAndQuestionId(userId, request.getQuestionId());
-        }
-
-        if (request.getSessionId() != null && !request.getSessionId().trim().isEmpty()) {
-            return userAnswerRecordMapper.findLatestBySessionIdAndQuestionId(request.getSessionId(), request.getQuestionId());
-        }
-
-        return null;
+    private void applySchedule(AnswerResponse response,
+                               Integer stage,
+                               LocalDateTime nextReviewAt,
+                               Duration interval) {
+        response.setReviewStage(stage);
+        response.setNextReviewAt(nextReviewAt);
+        response.setIntervalMinutes(interval == null ? null : interval.toMinutes());
     }
 
-    /**
-     * 生成新的会话ID
-     * @return 会话ID
-     */
-    public String generateSessionId() {
-        return UUID.randomUUID().toString();
+    private Duration durationBetween(LocalDateTime start, LocalDateTime end) {
+        if (start == null || end == null) return null;
+        Duration duration = Duration.between(start, end);
+        return duration.isNegative() ? Duration.ZERO : duration;
+    }
+
+    private List<SatQuestionResponse> toResponses(List<SatQuestion> questions) {
+        return questions.stream().map(SatQuestionResponse::fromSatQuestion).toList();
+    }
+
+    private Map<String, Long> toBreakdownMap(List<QuestionBankBreakdown> rows) {
+        Map<String, Long> result = new LinkedHashMap<>();
+        for (QuestionBankBreakdown row : rows) {
+            if (row.getLabel() != null) {
+                result.merge(row.getLabel(), row.getCount() == null ? 0L : row.getCount(), Long::sum);
+            }
+        }
+        return result;
+    }
+
+    private int normalizeLimit(int count) {
+        return Math.max(1, Math.min(MAX_BATCH_SIZE, count));
+    }
+
+    private int value(Integer value) {
+        return value == null ? 0 : value;
+    }
+
+    private Integer toLegacyUserId(Long userId) {
+        try {
+            return Math.toIntExact(userId);
+        } catch (ArithmeticException e) {
+            throw new IllegalArgumentException("The authenticated user ID is out of range.");
+        }
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

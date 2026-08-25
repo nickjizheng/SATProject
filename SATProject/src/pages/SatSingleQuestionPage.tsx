@@ -1,331 +1,160 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Button, Spin, message, Typography, Space, Alert, Row, Col, Statistic, Tag } from 'antd';
-import { ReloadOutlined, RightOutlined, TrophyOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import type { SatQuestion, AnswerResponse, NextQuestionResponse } from '../types/sat';
+import { useEffect, useRef, useState } from 'react';
+import { Empty, Spin, message } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, Clock3, Flame, RefreshCw, Sparkles, Target } from 'lucide-react';
+import type { AnswerResponse, NextQuestionResponse, SatQuestion } from '../types/sat';
 import { SatService } from '../services/satService';
 import SatQuestionCard from '../components/SatQuestionCard';
+import { Button } from '../components/ui/button';
+import { Card } from '../components/ui/card';
 
-const { Title, Text } = Typography;
 const QUICK_SESSION_TARGET = 5;
+const createSubmissionId = () => globalThis.crypto?.randomUUID?.() || `quick-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-const SatSingleQuestionPage: React.FC = () => {
+export default function SatSingleQuestionPage() {
+  const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState<SatQuestion | null>(null);
-  const [selectedAnswer, setSelectedAnswer] = useState<string>('');
+  const [selectedAnswer, setSelectedAnswer] = useState('');
   const [answerResult, setAnswerResult] = useState<AnswerResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string>('');
-  const [questionStats, setQuestionStats] = useState({
-    answeredCount: 0,
-    hasMoreQuestions: true
-  });
-  const [showAnswer, setShowAnswer] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [sessionId, setSessionId] = useState('');
+  const [hasMoreQuestions, setHasMoreQuestions] = useState(true);
   const [sessionAnswered, setSessionAnswered] = useState(0);
-  const [answerSummary, setAnswerSummary] = useState({
-    answeredQuestions: 0,
-    correctAnswers: 0,
-    accuracy: 0,
-  });
-
-  // Initialize session
-  useEffect(() => {
-    if (!sessionId) {
-      initializeSession();
-    }
-  }, [sessionId]);
-
-  // Load a random unanswered question when the session is ready.
-  useEffect(() => {
-    if (sessionId) {
-      loadNextQuestion();
-    }
-  }, [sessionId]);
+  const [sessionCorrect, setSessionCorrect] = useState(0);
+  const [answerSummary, setAnswerSummary] = useState({ answeredQuestions: 0, correctAnswers: 0, accuracy: 0 });
+  const questionStartedAt = useRef(Date.now());
+  const submissionId = useRef(createSubmissionId());
+  const submitInFlight = useRef(false);
 
   useEffect(() => {
-    loadAnswerSummary();
+    const initialise = async () => {
+      try {
+        const [newSessionId, summary] = await Promise.all([SatService.generateSession(), SatService.getAnswerSummary()]);
+        setSessionId(newSessionId);
+        setAnswerSummary(summary);
+      } catch (error) {
+        setLoading(false);
+        message.error(error instanceof Error ? error.message : 'Daily Quick could not start.');
+      }
+    };
+    void initialise();
   }, []);
 
-  const loadAnswerSummary = async () => {
-    try {
-      const summary = await SatService.getAnswerSummary();
-      setAnswerSummary(summary);
-    } catch (error) {
-      console.error('Failed to load SAT answer summary:', error);
-    }
+  useEffect(() => {
+    if (sessionId) void loadNextQuestion(sessionId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
+
+  const refreshSummary = async () => {
+    try { setAnswerSummary(await SatService.getAnswerSummary()); } catch { /* keep the active session moving */ }
   };
 
-  const initializeSession = async () => {
-    try {
-      const newSessionId = await SatService.generateSession();
-      setSessionId(newSessionId);
-      console.log('Created new session:', newSessionId);
-    } catch (error) {
-      console.error('Failed to create session:', error);
-      message.error('Failed to create a session.');
-    }
-  };
-
-  const loadNextQuestion = async () => {
-    if (!sessionId) return;
-
+  const loadNextQuestion = async (activeSessionId = sessionId) => {
+    if (!activeSessionId) return;
     setLoading(true);
     setSelectedAnswer('');
     setAnswerResult(null);
-    setShowAnswer(false);
-
     try {
-      const response: NextQuestionResponse = await SatService.getNextQuestion({
-        sessionId
-      });
-
-      console.log('Get next question response:', response);
-
-      if (response.question) {
-        setCurrentQuestion(response.question);
-        setQuestionStats({
-          answeredCount: response.answeredCount,
-          hasMoreQuestions: response.hasMoreQuestions
-        });
-      } else {
-        setCurrentQuestion(null);
-        setQuestionStats({
-          answeredCount: response.answeredCount,
-          hasMoreQuestions: false
-        });
-        message.info('No more questions with verified answer keys are available.');
-      }
+      const response: NextQuestionResponse = await SatService.getNextQuestion({ sessionId: activeSessionId });
+      setCurrentQuestion(response.question || null);
+      setHasMoreQuestions(response.hasMoreQuestions);
+      questionStartedAt.current = Date.now();
+      submissionId.current = createSubmissionId();
+      if (!response.question) message.info('You have completed every available new question. Your review queue may still be waiting.');
     } catch (error) {
-      console.error('Failed to load question:', error);
-      message.error('Failed to load the next question: ' + (error as Error).message);
+      message.error(error instanceof Error ? error.message : 'The next question could not be loaded.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAnswerSelect = (answer: string) => {
-    setSelectedAnswer(answer);
-    setAnswerResult(null);
-    setShowAnswer(false);
-  };
-
-  const handleSubmitAnswer = async () => {
-    if (!selectedAnswer || !currentQuestion) {
-      message.warning('Please choose an answer.');
-      return;
-    }
-
+  const submitAnswer = async () => {
+    if (!currentQuestion || !selectedAnswer || answerResult || submitInFlight.current) return;
+    submitInFlight.current = true;
+    setSubmitting(true);
     try {
       const result = await SatService.submitAnswerWithRecord({
         questionId: currentQuestion.id,
         answer: selectedAnswer,
-        sessionId: sessionId
+        sessionId,
+        submissionId: submissionId.current,
+        studyMode: 'quick',
+        responseTimeMs: Math.max(0, Date.now() - questionStartedAt.current),
       });
-
       setAnswerResult(result);
-      setShowAnswer(true);
-      setQuestionStats(prev => ({
-        ...prev,
-        answeredCount: prev.answeredCount + 1
-      }));
-      setSessionAnswered(previous => previous + 1);
-      await loadAnswerSummary();
-
-      message.success(result.isCorrect ? 'Correct answer!' : 'Incorrect answer. Keep going.');
+      setSessionAnswered(value => value + 1);
+      if (result.isCorrect) setSessionCorrect(value => value + 1);
+      void refreshSummary();
     } catch (error) {
-      console.error('Failed to submit answer:', error);
-      message.error('Failed to submit your answer: ' + (error as Error).message);
+      message.error(error instanceof Error ? error.message : 'Your answer could not be saved.');
+    } finally {
+      submitInFlight.current = false;
+      setSubmitting(false);
     }
   };
 
-  const handleNextQuestion = () => {
-    if (questionStats.hasMoreQuestions) {
-      loadNextQuestion();
-    } else {
-      message.info('No more questions available');
-    }
-  };
+  const sessionAccuracy = sessionAnswered ? Math.round((sessionCorrect / sessionAnswered) * 100) : 0;
+  const goalProgress = Math.min((sessionAnswered / QUICK_SESSION_TARGET) * 100, 100);
 
   return (
-    <div className="practice-page single-question-page" style={{
-      minHeight: '100vh',
-      background: '#f5f5f5',
-      padding: '24px'
-    }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        {/* 页面标题 */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>Daily Quick Practice</Title>
-          <Text type="secondary" style={{ fontSize: '16px' }}>
-            Jump into one random unanswered question from the full SAT bank.
-          </Text>
+    <div className="page-shell single-question-page">
+      <header className="mb-8 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div>
+          <p className="page-kicker flex items-center gap-2"><Sparkles size={14} /> Daily Quick</p>
+          <h1 className="page-title mt-3">One question. <em className="font-light text-teal-800">Real momentum.</em></h1>
+          <p className="page-subtitle mt-5">A low-friction mixed question for busy days. Every answer joins your memory schedule automatically.</p>
         </div>
+        <Button variant="secondary" onClick={() => void loadNextQuestion()} disabled={loading || submitting}><RefreshCw size={17} className={loading ? 'animate-spin' : ''} /> Shuffle</Button>
+      </header>
 
-        {/* 控制面板 */}
-        <Card
-          style={{
-            marginBottom: '24px',
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}
-        >
-          <Row gutter={[24, 16]} align="middle">
-            <Col xs={24} md={10}>
-              <div style={{ paddingTop: '6px' }}>
-                <Text strong style={{ display: 'block', marginBottom: '8px' }}>Your mixed daily queue</Text>
-                <Space wrap>
-                  <Tag color="cyan">All domains</Tag>
-                  <Tag color="green">Unanswered only</Tag>
-                  <Tag color="gold">Random order</Tag>
-                </Space>
-              </div>
-            </Col>
-            <Col xs={24} sm={10} md={6}>
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={loadNextQuestion}
-                loading={loading}
-                size="large"
-                className="practice-start-button"
-                style={{ width: '100%', marginTop: '28px', height: '48px', fontSize: '16px', borderRadius: '8px' }}
-              >
-                Shuffle Question
-              </Button>
-            </Col>
-            <Col xs={24} sm={14} md={8}>
-              <div className="practice-stats" style={{ textAlign: 'right' }}>
-                <Space wrap>
-                  <Statistic
-                    title="Accuracy"
-                    value={answerSummary.accuracy}
-                    suffix="%"
-                    valueStyle={{ color: answerSummary.accuracy >= 80 ? '#52c41a' : answerSummary.accuracy >= 60 ? '#faad14' : '#ff4d4f' }}
-                    prefix={<TrophyOutlined />}
-                  />
-                  <Statistic
-                    title="Answered"
-                    value={answerSummary.answeredQuestions}
-                    valueStyle={{ color: '#1890ff' }}
-                  />
-                </Space>
-              </div>
-            </Col>
-          </Row>
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <Card className="p-5">
+          <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-stone-400">Mini-session</span><Target size={18} className="text-[#e96b4d]" /></div>
+          <strong className="mt-4 block font-display text-4xl">{sessionAnswered}<span className="text-xl text-stone-400">/{QUICK_SESSION_TARGET}</span></strong>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-stone-200"><div className="h-full rounded-full bg-[#e96b4d] transition-[width] duration-500" style={{ width: `${goalProgress}%` }} /></div>
         </Card>
-
-        {/* Personal result summary. The question-bank size remains private. */}
-        <Card
-          style={{
-            marginBottom: '24px',
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}
-        >
-          <Row align="middle" gutter={[16, 16]}>
-            <Col xs={24} sm={12} md={8}>
-              <div style={{ textAlign: 'center' }}>
-                <Text strong style={{ fontSize: '18px' }}>
-                  {sessionAnswered} answered this quick session
-                </Text>
-                <div className="mx-auto mt-3 h-2 max-w-[220px] overflow-hidden rounded-full bg-stone-200">
-                  <div
-                    className="h-full rounded-full bg-[#123d3a] transition-[width] duration-500"
-                    style={{ width: `${Math.min((sessionAnswered / QUICK_SESSION_TARGET) * 100, 100)}%` }}
-                  />
-                </div>
-                <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-                  {sessionAnswered >= QUICK_SESSION_TARGET
-                    ? 'Mini-session complete. Keep going if you have momentum.'
-                    : 'Five questions makes a focused mini-session.'}
-                </Text>
-              </div>
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <div style={{ textAlign: 'center' }}>
-                <Space>
-                  <Statistic
-                    title="Correct"
-                    value={answerSummary.correctAnswers}
-                    valueStyle={{ color: '#52c41a' }}
-                    prefix={<CheckCircleOutlined />}
-                  />
-                  <Statistic
-                    title="Incorrect"
-                    value={Math.max(answerSummary.answeredQuestions - answerSummary.correctAnswers, 0)}
-                    valueStyle={{ color: '#ff4d4f' }}
-                    prefix={<ClockCircleOutlined />}
-                  />
-                </Space>
-              </div>
-            </Col>
-            <Col xs={24} sm={24} md={8}>
-              {!questionStats.hasMoreQuestions && (
-                <Alert
-                  message="All done!"
-                  description="You have completed every available question in the mixed queue."
-                  type="success"
-                  showIcon
-                />
-              )}
-            </Col>
-          </Row>
+        <Card className="p-5">
+          <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-stone-400">This session</span><CheckCircle2 size={18} className="text-emerald-600" /></div>
+          <strong className="mt-4 block font-display text-4xl">{sessionAccuracy}%</strong>
+          <p className="mt-2 text-xs text-stone-500">{sessionCorrect} correct so far</p>
         </Card>
-
-        {/* 题目区域 */}
-        {loading ? (
-          <Card style={{ textAlign: 'center', padding: '60px', borderRadius: '12px' }}>
-            <Spin size="large" />
-            <div style={{ marginTop: '16px', fontSize: '16px' }}>Loading question...</div>
-          </Card>
-        ) : currentQuestion ? (
-          <>
-            <Card
-              style={{
-                marginBottom: '24px',
-                borderRadius: '12px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                minHeight: '600px'
-              }}
-            >
-              <SatQuestionCard
-                question={currentQuestion}
-                selectedAnswer={selectedAnswer}
-                onAnswerSelect={handleAnswerSelect}
-                onSubmitAnswer={handleSubmitAnswer}
-                answerResult={answerResult}
-                showAnswer={showAnswer}
-              />
-            </Card>
-
-            {/* 下一题按钮 */}
-            {showAnswer && questionStats.hasMoreQuestions && (
-              <Card
-                style={{
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                }}
-              >
-                <div style={{ textAlign: 'center' }}>
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<RightOutlined />}
-                    onClick={handleNextQuestion}
-                    style={{ minWidth: '160px', height: '48px', fontSize: '16px' }}
-                  >
-                    Next Question
-                  </Button>
-                </div>
-              </Card>
-            )}
-          </>
-        ) : (
-          <Card style={{ textAlign: 'center', padding: '60px', borderRadius: '12px' }}>
-            <Text type="secondary" style={{ fontSize: '16px' }}>No question data available.</Text>
-          </Card>
-        )}
+        <Card className="overflow-hidden bg-[#173c39] p-5 text-white">
+          <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-white/50">All-time</span><Flame size={18} className="text-[#f1b49f]" /></div>
+          <strong className="mt-4 block font-display text-4xl">{answerSummary.accuracy}%</strong>
+          <p className="mt-2 text-xs text-white/45">Across {answerSummary.answeredQuestions} unique questions</p>
+        </Card>
       </div>
+
+      {loading ? (
+        <Card className="grid min-h-80 place-items-center"><div className="text-center"><Spin size="large" /><p className="mt-4 text-sm text-stone-500">Finding a fresh question…</p></div></Card>
+      ) : currentQuestion ? (
+        <div className="grid gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-900/10 bg-white/60 px-4 py-3 text-xs font-bold text-stone-600">
+            <span className="flex items-center gap-2"><Clock3 size={15} className="text-[#123d3a]" /> Mixed domains · unanswered · quality-screened</span>
+            <span>{sessionAnswered >= QUICK_SESSION_TARGET ? 'Daily target complete — anything else is a bonus.' : `${QUICK_SESSION_TARGET - sessionAnswered} to your mini-session goal`}</span>
+          </div>
+          <SatQuestionCard
+            question={currentQuestion}
+            selectedAnswer={selectedAnswer}
+            onAnswerSelect={answer => { if (!answerResult) setSelectedAnswer(answer); }}
+            onSubmitAnswer={() => void submitAnswer()}
+            answerResult={answerResult}
+            showAnswer={Boolean(answerResult)}
+            submitting={submitting}
+          />
+          {answerResult && (
+            <div className="flex flex-col gap-3 rounded-[1.5rem] border border-stone-900/10 bg-white/65 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div><p className="font-display text-2xl font-semibold">Review scheduled.</p><p className="mt-1 text-xs text-stone-500">{answerResult.isCorrect ? 'You’ll see this again after a longer gap.' : 'This one returns soon so the correction can stick.'}</p></div>
+              <Button onClick={() => void loadNextQuestion()} disabled={!hasMoreQuestions}>Next quick question <ArrowRight size={17} /></Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Card className="grid min-h-80 place-items-center p-8 text-center">
+          <div className="max-w-md"><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No new questions are waiting" /><p className="mt-4 text-sm leading-6 text-stone-500">New-question practice is complete for now. Scheduled review can still strengthen what you have learned.</p><Button className="mt-6" onClick={() => navigate('/review')}>Open memory review <ArrowRight size={17} /></Button></div>
+        </Card>
+      )}
     </div>
   );
-};
-
-export default SatSingleQuestionPage;
+}

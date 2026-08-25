@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { Avatar, Button, Divider, Form, Input, message, Modal, Space, Switch, Tabs, Tag, Typography } from 'antd';
-import { LogoutOutlined, SoundOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Button, Divider, Form, Input, InputNumber, message, Modal, Space, Switch, Tabs, Tag, Typography } from 'antd';
+import { CalendarOutlined, LogoutOutlined, SoundOutlined, UserOutlined } from '@ant-design/icons';
 import { getUserPreferences, saveUserPreferences, type UserPreferences } from '../utils/userPreferences';
 
 const { Paragraph, Text, Title } = Typography;
@@ -28,7 +28,12 @@ export default function AccountModal({ open, user, onClose, onLogout, onProfileS
   }, [form, open]);
 
   const save = (values: UserPreferences) => {
-    const preferences = { ...getUserPreferences(), ...values, displayName: values.displayName.trim() };
+    const preferences = {
+      ...getUserPreferences(),
+      ...values,
+      displayName: (values.displayName || '').trim(),
+      dailyReviewGoal: Math.min(50, Math.max(5, Math.round(values.dailyReviewGoal || 12))),
+    };
     saveUserPreferences(preferences);
     onProfileSaved(preferences.displayName);
     message.success('Profile and preferences saved.');
@@ -58,6 +63,20 @@ export default function AccountModal({ open, user, onClose, onLogout, onProfileS
 
   const settings = (
     <div className="space-y-3 pt-2">
+      <div className="rounded-2xl border border-stone-900/10 bg-[#e6d8bb]/25 p-4">
+        <div className="mb-4 flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#123d3a] text-[#f4d8cc]"><CalendarOutlined /></span>
+          <div><Text strong>Study plan</Text><Paragraph className="!mb-0 !mt-1 !text-xs !text-stone-500">Set a target date and a manageable daily memory-review goal for this device.</Paragraph></div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Form.Item name="testDate" label="Target test date" className="!mb-0">
+            <Input type="date" min={new Date().toISOString().slice(0, 10)} aria-label="Target test date" />
+          </Form.Item>
+          <Form.Item name="dailyReviewGoal" label="Daily review goal" className="!mb-0" rules={[{ required: true, message: 'Choose a daily review goal.' }]}>
+            <InputNumber min={5} max={50} step={1} addonAfter="questions" className="!w-full" />
+          </Form.Item>
+        </div>
+      </div>
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-stone-900/10 p-4">
         <div><Text strong>Correct-answer sounds</Text><Paragraph className="!mb-0 !mt-1 !text-xs !text-stone-500">Play a short chime after a correct response.</Paragraph></div>
         <Form.Item name="soundEffects" valuePropName="checked" noStyle><Switch aria-label="Correct-answer sounds" /></Form.Item>

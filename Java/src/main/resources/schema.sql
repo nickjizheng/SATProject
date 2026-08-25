@@ -68,6 +68,19 @@ CREATE TABLE IF NOT EXISTS sat_questions (
     KEY idx_sat_questions_correct_answer (correct_answer)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS sat_question_quality (
+    question_id INT NOT NULL,
+    quality_status VARCHAR(32) NOT NULL,
+    usable TINYINT(1) NOT NULL DEFAULT 0,
+    answer_key_source VARCHAR(64) NOT NULL,
+    duplicate_of_question_id INT DEFAULT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (question_id),
+    KEY idx_sat_question_quality_usable (usable),
+    KEY idx_sat_question_quality_status (quality_status),
+    KEY idx_sat_question_quality_duplicate (duplicate_of_question_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS user_answer_records (
     id INT NOT NULL AUTO_INCREMENT,
     user_id INT DEFAULT NULL,
@@ -82,6 +95,82 @@ CREATE TABLE IF NOT EXISTS user_answer_records (
     KEY idx_question (question_id),
     KEY idx_answered_at (answered_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Immutable event log. user_answer_records remains the compact latest-answer view
+-- consumed by the existing dashboard while every submission is retained here.
+CREATE TABLE IF NOT EXISTS question_attempts (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    submission_id VARCHAR(100) DEFAULT NULL,
+    user_id BIGINT DEFAULT NULL,
+    session_id VARCHAR(100) DEFAULT NULL,
+    question_id INT NOT NULL,
+    user_answer CHAR(1) NOT NULL,
+    is_correct TINYINT(1) NOT NULL,
+    study_mode VARCHAR(40) DEFAULT NULL,
+    response_time_ms BIGINT DEFAULT NULL,
+    stage_before SMALLINT DEFAULT NULL,
+    default_stage SMALLINT DEFAULT NULL,
+    default_next_review_at TIMESTAMP NULL DEFAULT NULL,
+    submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_question_attempt_submission (submission_id),
+    KEY idx_question_attempt_user_time (user_id, submitted_at),
+    KEY idx_question_attempt_session_time (session_id, submitted_at),
+    KEY idx_question_attempt_question (question_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_question_review_state (
+    user_id BIGINT NOT NULL,
+    question_id INT NOT NULL,
+    stage SMALLINT NOT NULL DEFAULT 0,
+    next_review_at TIMESTAMP NOT NULL,
+    last_answered_at TIMESTAMP NOT NULL,
+    last_correct TINYINT(1) NOT NULL DEFAULT 0,
+    correct_streak INT NOT NULL DEFAULT 0,
+    lapse_count INT NOT NULL DEFAULT 0,
+    total_attempts INT NOT NULL DEFAULT 1,
+    last_attempt_id BIGINT DEFAULT NULL,
+    last_grade VARCHAR(10) NOT NULL DEFAULT 'GOOD',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, question_id),
+    KEY idx_review_state_due (user_id, next_review_at),
+    KEY idx_review_state_question (question_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Existing installations only stored one current answer per user/question. Seed a
+-- review state once from the newest such record without replacing newer scheduler data.
+INSERT IGNORE INTO user_question_review_state (
+    user_id, question_id, stage, next_review_at, last_answered_at,
+    last_correct, correct_streak, lapse_count, total_attempts, last_grade
+)
+SELECT
+    latest.user_id,
+    latest.question_id,
+    CASE WHEN latest.is_correct = 1 THEN 1 ELSE 0 END,
+    CASE
+        WHEN latest.is_correct = 1 THEN DATE_ADD(latest.answered_at, INTERVAL 1 DAY)
+        ELSE DATE_ADD(latest.answered_at, INTERVAL 10 MINUTE)
+    END,
+    latest.answered_at,
+    COALESCE(latest.is_correct, 0),
+    CASE WHEN latest.is_correct = 1 THEN 1 ELSE 0 END,
+    CASE WHEN latest.is_correct = 1 THEN 0 ELSE 1 END,
+    1,
+    CASE WHEN latest.is_correct = 1 THEN 'GOOD' ELSE 'AGAIN' END
+FROM user_answer_records latest
+WHERE latest.user_id IS NOT NULL
+  AND latest.is_correct IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM user_answer_records newer
+      WHERE newer.user_id = latest.user_id
+        AND newer.question_id = latest.question_id
+        AND (
+            newer.answered_at > latest.answered_at
+            OR (newer.answered_at = latest.answered_at AND newer.id > latest.id)
+        )
+  );
 
 CREATE TABLE IF NOT EXISTS favorite_words (
     id BIGINT NOT NULL AUTO_INCREMENT,

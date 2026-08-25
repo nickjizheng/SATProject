@@ -13,8 +13,10 @@ import {
   TrophyOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { DashboardService, type RecentActivity, type UserStats } from '../services/dashboardService';
+import { DashboardService, type RecentActivity, type StudyProgress, type UserStats } from '../services/dashboardService';
 import { getUserPreferences } from '../utils/userPreferences';
+import { ReviewService } from '../services/reviewService';
+import type { ReviewSummary } from '../types/review';
 
 const { Title, Text } = Typography;
 
@@ -65,6 +67,8 @@ export default function Dashboard() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(null);
+  const [studyProgress, setStudyProgress] = useState<StudyProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -78,11 +82,19 @@ export default function Dashboard() {
       ]);
       setUserStats(stats);
       setRecentActivities(activities);
+      const [reviewResult, progressResult] = await Promise.allSettled([
+        ReviewService.getSummary(),
+        DashboardService.getStudyProgress(7),
+      ]);
+      setReviewSummary(reviewResult.status === 'fulfilled' ? reviewResult.value : null);
+      setStudyProgress(progressResult.status === 'fulfilled' ? progressResult.value : []);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load dashboard data.';
       setUserStats(null);
       setRecentActivities([]);
+      setReviewSummary(null);
+      setStudyProgress([]);
       setLoadError(errorMessage);
       message.error(errorMessage);
     } finally {
@@ -123,6 +135,7 @@ export default function Dashboard() {
 
   const scrollToPerformance = () => document.querySelector('#domain-performance')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   const displayName = getUserPreferences().displayName || userInfo?.username || 'Student';
+  const maxDailyQuestions = Math.max(1, ...studyProgress.map(day => day.questionsAnswered));
 
   if (!userInfo || loading) {
     return <div className="grid min-h-screen place-items-center"><Spin size="large" /></div>;
@@ -152,7 +165,7 @@ export default function Dashboard() {
 
       <Row gutter={[18, 18]} className="mb-6">
         <Col xs={24} sm={12} xl={6}>
-          <MetricCard className="metric-teal" title="Questions Answered" value={userStats?.answeredQuestions || 0} prefix={<BookOutlined />} detail="Continue in SAT Practice" onClick={() => navigate('/sat-practice')} />
+          <MetricCard className="metric-teal" title="Due for Review" value={reviewSummary?.dueNow || 0} prefix={<ClockCircleOutlined />} detail="Open your memory queue" onClick={() => navigate('/review')} />
         </Col>
         <Col xs={24} sm={12} xl={6}>
           <MetricCard className="metric-coral" title="Accuracy" value={userStats?.averageScore || 0} suffix="%" prefix={<TrophyOutlined />} detail="View performance by domain" onClick={scrollToPerformance} />
@@ -161,7 +174,7 @@ export default function Dashboard() {
           <MetricCard className="metric-ochre" title="Study Streak" value={userStats?.studyStreak || 0} prefix={<FireOutlined />} detail="Keep it going with Daily Quick" onClick={() => navigate('/sat-single')} />
         </Col>
         <Col xs={24} sm={12} xl={6}>
-          <MetricCard className="metric-ink" title="Saved Questions" value={userStats?.favoriteQuestions || 0} prefix={<StarOutlined />} detail="Open your review collection" onClick={() => navigate('/favorite-questions')} />
+          <MetricCard className="metric-ink" title="Mastered" value={reviewSummary?.mastered || 0} prefix={<StarOutlined />} detail="Questions at long intervals" onClick={() => navigate('/review')} />
         </Col>
       </Row>
 
@@ -170,10 +183,30 @@ export default function Dashboard() {
           <Card title="Choose your next move" className="mb-5">
             <Row gutter={[12, 12]}>
               <Col xs={24} sm={12}><Button type="primary" block size="large" icon={<BookOutlined />} onClick={() => navigate('/sat-practice')}>SAT Practice</Button></Col>
+              <Col xs={24} sm={12}><Button block size="large" icon={<ClockCircleOutlined />} onClick={() => navigate('/review')}>Memory Review</Button></Col>
               <Col xs={24} sm={12}><Button block size="large" icon={<FireOutlined />} onClick={() => navigate('/sat-single')}>Daily Quick</Button></Col>
               <Col xs={24} sm={12}><Button block size="large" icon={<SearchOutlined />} onClick={() => navigate('/dictionary')}>Dictionary</Button></Col>
               <Col xs={24} sm={12}><Button block size="large" icon={<HeartOutlined />} onClick={() => navigate('/favorite-words')}>Saved Words</Button></Col>
+              <Col xs={24} sm={12}><Button block size="large" icon={<StarOutlined />} onClick={() => navigate('/resources')}>Study Resources</Button></Col>
             </Row>
+          </Card>
+
+          <Card title="Last 7 study days" className="mb-5">
+            {studyProgress.length ? (
+              <div className="grid h-44 grid-cols-7 items-end gap-2 pt-4" aria-label="Questions answered over the last seven days">
+                {studyProgress.map(day => {
+                  const height = Math.max(day.questionsAnswered ? 12 : 3, (day.questionsAnswered / maxDailyQuestions) * 100);
+                  const label = new Date(`${day.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' });
+                  return (
+                    <div key={day.date} className="flex h-full min-w-0 flex-col items-center justify-end gap-2" title={`${day.questionsAnswered} answered, ${day.correctAnswers} correct`}>
+                      <span className="text-[10px] font-bold text-stone-500">{day.questionsAnswered || ''}</span>
+                      <div className="w-full max-w-10 rounded-t-xl bg-gradient-to-t from-[#123d3a] to-[#2ba89c]" style={{ height: `${height}%` }} />
+                      <span className="text-[9px] font-bold uppercase text-stone-400">{label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Your weekly rhythm will appear after a few study sessions." />}
           </Card>
 
           <Card title="Recent activity">
@@ -214,14 +247,14 @@ export default function Dashboard() {
 
           <Card title="Your study snapshot">
             <Row gutter={[12, 18]}>
-              <Col span={12}><Statistic title="Correct" value={userStats?.correctAnswers || 0} prefix={<CheckCircleOutlined />} /></Col>
-              <Col span={12}><Statistic title="Saved words" value={userStats?.favoriteWords || 0} prefix={<HeartOutlined />} /></Col>
+              <Col span={12}><Statistic title="Retention" value={reviewSummary?.retentionEstimate || 0} suffix="%" prefix={<CheckCircleOutlined />} /></Col>
+              <Col span={12}><Statistic title="Reviewed today" value={reviewSummary?.reviewedToday || 0} prefix={<ClockCircleOutlined />} /></Col>
             </Row>
             <div className="mt-5 rounded-2xl bg-[#123d3a] p-5 text-white">
               <ClockCircleOutlined className="text-[#e6d8bb]" />
-              <p className="mt-3 font-display text-2xl leading-tight">A short session still counts.</p>
-              <p className="mt-2 text-xs leading-5 text-white/55">Daily Quick selects an unanswered question at random and shares the same history as full practice.</p>
-              <Button className="mt-4" onClick={() => navigate('/sat-single')}>Answer one now</Button>
+              <p className="mt-3 font-display text-2xl leading-tight">Review beats rereading.</p>
+              <p className="mt-2 text-xs leading-5 text-white/55">Correct answers move to longer intervals. Misses return quickly, while the correction is still fresh.</p>
+              <Button className="mt-4" onClick={() => navigate('/review')}>{reviewSummary?.dueNow ? `Review ${reviewSummary.dueNow} now` : 'View memory plan'}</Button>
             </div>
           </Card>
         </Col>

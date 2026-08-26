@@ -24,6 +24,10 @@ import AccountModal, { type AccountUser } from './AccountModal';
 import Brand from './Brand';
 import { getUserPreferences, PREFERENCES_EVENT } from '../utils/userPreferences';
 import { ReviewService } from '../services/reviewService';
+import { authService } from '../services/authService';
+import { notifyGuestAccessChanged } from '../services/guestTrialService';
+import { useGuestAccess } from '../hooks/useGuestAccess';
+import { SignInPromptModal } from './guest';
 
 interface NavigationProps {
   collapsed: boolean;
@@ -57,11 +61,13 @@ const mobileMoreItems = navItems.slice(4);
 export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const guestAccess = useGuestAccess();
   const [userInfo, setUserInfo] = useState<AccountUser | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [displayName, setDisplayName] = useState(() => getUserPreferences().displayName);
   const [dueCount, setDueCount] = useState(0);
+  const [signInOpen, setSignInOpen] = useState(false);
 
   useEffect(() => {
     const user = localStorage.getItem('user');
@@ -73,8 +79,12 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
   }, [location.pathname]);
 
   useEffect(() => {
+    if (!guestAccess.signedIn) {
+      setDueCount(0);
+      return;
+    }
     ReviewService.getSummary().then(summary => setDueCount(summary.dueNow)).catch(() => setDueCount(0));
-  }, [location.pathname]);
+  }, [guestAccess.signedIn, location.pathname]);
 
   useEffect(() => {
     const updatePreferences = () => setDisplayName(getUserPreferences().displayName);
@@ -82,11 +92,23 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
     return () => window.removeEventListener(PREFERENCES_EVENT, updatePreferences);
   }, []);
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
-    navigate('/auth?mode=login');
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Local sign-out must still complete if the token is already expired or the API is unavailable.
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('refreshToken');
+      notifyGuestAccessChanged();
+      navigate('/auth?mode=login');
+    }
+  };
+
+  const openAccount = () => {
+    if (guestAccess.signedIn) setAccountOpen(true);
+    else setSignInOpen(true);
   };
 
   const navigateFromMobile = (path: string) => {
@@ -133,7 +155,7 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
 
       <button
         type="button"
-        onClick={() => setAccountOpen(true)}
+        onClick={openAccount}
         title={collapsed ? 'Open profile and settings' : undefined}
         className="m-3 rounded-[1.4rem] border border-white/10 bg-white/6 p-3 text-left transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#e07a5f]"
       >
@@ -141,8 +163,8 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-[#f4d8cc]"><CircleUserRound size={21} /></span>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-extrabold">{displayName || userInfo?.username || 'Student'}</p>
-              <p className="truncate text-[10px] text-teal-50/45">{userInfo?.email || 'Ready to practise'}</p>
+              <p className="truncate text-sm font-extrabold">{guestAccess.signedIn ? (displayName || userInfo?.username || 'Student') : 'Guest'}</p>
+              <p className="truncate text-[10px] text-teal-50/45">{guestAccess.signedIn ? (userInfo?.email || 'Ready to practise') : 'Sign in to save progress'}</p>
             </div>
           )}
         </div>
@@ -192,12 +214,12 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
                 type="button"
                 onClick={() => {
                   setMobileMoreOpen(false);
-                  setAccountOpen(true);
+                  openAccount();
                 }}
                 className="col-span-2 flex min-h-12 items-center gap-2 rounded-xl bg-[#e6d8bb]/45 px-3 text-left text-xs font-extrabold"
               >
                 <CircleUserRound size={18} />
-                Profile & settings
+                {guestAccess.signedIn ? 'Profile & settings' : 'Sign in to save'}
               </button>
             </div>
           </motion.div>
@@ -230,12 +252,13 @@ export default function Navigation({ collapsed, onCollapse }: NavigationProps) {
       </button>
     </nav>
     <AccountModal
-      open={accountOpen}
+      open={accountOpen && guestAccess.signedIn}
       user={userInfo}
       onClose={() => setAccountOpen(false)}
       onLogout={logout}
       onProfileSaved={setDisplayName}
     />
+    <SignInPromptModal open={signInOpen} onClose={() => setSignInOpen(false)} reason="save" />
     </>
   );
 }

@@ -4,6 +4,8 @@ import { SoundOutlined, CalendarOutlined, BookOutlined, HeartOutlined, HeartFill
 import type { DictionaryResponse } from '../types/dictionary';
 import { FavoriteWordService } from '../services/favoriteWordService';
 import { getPronunciationAudioUrl } from '../utils/dictionaryAudio';
+import { SignInPromptModal } from './guest';
+import { useGuestAccess } from '../hooks/useGuestAccess';
 
 const { Title, Text } = Typography;
 
@@ -12,21 +14,30 @@ interface DictionaryResultProps {
 }
 
 const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
+  const guestAccess = useGuestAccess();
   const [isFavorited, setIsFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [signInOpen, setSignInOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (data && data.length > 0) {
-      checkFavoriteStatus();
+    let active = true;
+    if (guestAccess.signedIn && data && data.length > 0) {
+      const word = data[0].hwi?.hw?.replace(/\*/g, '') || '';
+      FavoriteWordService.checkFavoriteStatus(word)
+        .then(favorited => { if (active) setIsFavorited(favorited); })
+        .catch(error => console.error('Failed to check favorite status:', error));
+    } else {
+      setIsFavorited(false);
     }
 
     return () => {
+      active = false;
       audioRef.current?.pause();
       audioRef.current = null;
     };
-  }, [data]);
+  }, [data, guestAccess.signedIn]);
 
   const playPronunciation = async (audioName: string) => {
     audioRef.current?.pause();
@@ -51,20 +62,12 @@ const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
     }
   };
 
-  const checkFavoriteStatus = async () => {
-    if (data && data.length > 0) {
-      try {
-        const word = data[0].hwi?.hw?.replace(/\*/g, '') || '';
-        const favorited = await FavoriteWordService.checkFavoriteStatus(word);
-        setIsFavorited(favorited);
-      } catch (error) {
-        console.error('Failed to check favorite status:', error);
-      }
-    }
-  };
-
   const handleToggleFavorite = async () => {
     if (!data || data.length === 0) return;
+    if (!guestAccess.signedIn) {
+      setSignInOpen(true);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -148,6 +151,7 @@ const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
                   icon={isFavorited ? <HeartFilled /> : <HeartOutlined />}
                   onClick={handleToggleFavorite}
                   loading={loading}
+                  aria-label={guestAccess.signedIn ? (isFavorited ? 'Remove saved word' : 'Save word') : 'Sign in to save word'}
                   style={{
                     color: isFavorited ? '#ff4d4f' : '#d9d9d9',
                     fontSize: '20px',
@@ -310,6 +314,7 @@ const DictionaryResult: React.FC<DictionaryResultProps> = ({ data }) => {
         </Card>
         );
       })}
+      <SignInPromptModal open={signInOpen} onClose={() => setSignInOpen(false)} reason="save" title="Sign in to save this word" />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import type { AuthResponse } from '../types/auth';
+import { notifyGuestAccessChanged } from '../services/guestTrialService';
 
 export function storeAuthSession(data: AuthResponse) {
   localStorage.setItem('token', data.token);
@@ -9,4 +10,5 @@ export function storeAuthSession(data: AuthResponse) {
     email: data.email,
     emailVerified: data.emailVerified,
   }));
+  notifyGuestAccessChanged();
 }

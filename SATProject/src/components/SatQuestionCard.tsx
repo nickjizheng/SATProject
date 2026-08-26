@@ -6,8 +6,10 @@ import type { MistakeReason } from '../types/learning';
 import MathRenderer from './MathRenderer';
 import QuestionVisual from './QuestionVisual';
 import QuestionReportPanel from './QuestionReportPanel';
+import { SignInPromptModal } from './guest';
 import { FavoriteQuestionService } from '../services/favoriteQuestionService';
 import { LearningService } from '../services/learningService';
+import { useGuestAccess } from '../hooks/useGuestAccess';
 import CorrectAnswerCelebration from './CorrectAnswerCelebration';
 import { playCorrectAnswerChime, prepareFeedbackAudio } from '../utils/feedbackAudio';
 import { getUserPreferences } from '../utils/userPreferences';
@@ -38,6 +40,7 @@ export default function SatQuestionCard({
   submitLabel = 'Check answer',
   submitting = false,
 }: SatQuestionCardProps) {
+  const guestAccess = useGuestAccess();
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -47,16 +50,21 @@ export default function SatQuestionCard({
   const [reflectionExpanded, setReflectionExpanded] = useState(false);
   const [reflectionSaving, setReflectionSaving] = useState(false);
   const [reflectionState, setReflectionState] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [signInOpen, setSignInOpen] = useState(false);
   const reflectionInFlight = useRef(false);
   const reflectionRequestSequence = useRef(0);
 
   useEffect(() => {
+    if (!guestAccess.signedIn) {
+      setIsFavorited(false);
+      return;
+    }
     let active = true;
     FavoriteQuestionService.checkFavoriteStatus(question.id)
       .then(favorited => active && setIsFavorited(favorited))
       .catch(() => undefined);
     return () => { active = false; };
-  }, [question.id]);
+  }, [guestAccess.signedIn, question.id]);
 
   useEffect(() => {
     if (!showAnswer || !answerResult?.isCorrect || !celebrateOnCorrect) return;
@@ -79,6 +87,10 @@ export default function SatQuestionCard({
   }, [question.id]);
 
   const toggleFavorite = async () => {
+    if (!guestAccess.signedIn) {
+      setSignInOpen(true);
+      return;
+    }
     setFavoriteLoading(true);
     try {
       if (isFavorited) {
@@ -102,6 +114,10 @@ export default function SatQuestionCard({
 
   const saveReflection = async (nextReason = reflectionReason) => {
     if (answerResult?.isCorrect || nextReason === 'UNCLASSIFIED' || reflectionInFlight.current) return;
+    if (!guestAccess.signedIn) {
+      setSignInOpen(true);
+      return;
+    }
 
     const requestSequence = ++reflectionRequestSequence.current;
     reflectionInFlight.current = true;
@@ -213,7 +229,7 @@ export default function SatQuestionCard({
 
       {!showAnswer && (
         <div className="mt-7 flex flex-col gap-3 border-t border-stone-900/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs leading-5 text-stone-500">Choose one answer. Your first response shapes the next review date.</p>
+          <p className="text-xs leading-5 text-stone-500">{guestAccess.signedIn ? 'Choose one answer. Your first response shapes the next review date.' : 'Choose one answer. Guest results are checked without creating history.'}</p>
           <Button
             size="lg"
             disabled={!selectedAnswer || submitting}
@@ -222,7 +238,7 @@ export default function SatQuestionCard({
               prepareFeedbackAudio();
               onSubmitAnswer();
             }}
-          >{submitting ? 'Saving…' : submitLabel}</Button>
+          >{submitting ? (guestAccess.signedIn ? 'Saving…' : 'Checking…') : submitLabel}</Button>
         </div>
       )}
 
@@ -253,7 +269,7 @@ export default function SatQuestionCard({
             <div>
               <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-[#bd4e39]">One-minute repair</p>
               <h3 className="mt-1 font-display text-2xl font-semibold text-stone-900">What got in the way?</h3>
-              <p className="mt-1 text-xs leading-5 text-stone-500">One tap saves the closest cause to your Mistake Lab. This is your reflection, not an automated diagnosis.</p>
+              <p className="mt-1 text-xs leading-5 text-stone-500">{guestAccess.signedIn ? 'One tap saves the closest cause to your Mistake Lab. This is your reflection, not an automated diagnosis.' : 'Choose a cause to preview the reflection tool. Sign in when you want to save it to Mistake Lab.'}</p>
             </div>
             {reflectionState === 'saved' && <p role="status" className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-emerald-800"><CheckCircle2 size={14} /> Saved</p>}
           </div>
@@ -335,6 +351,7 @@ export default function SatQuestionCard({
       {showAnswer && answerResult && (
         <QuestionReportPanel key={question.id} questionId={question.id} className="mt-4" />
       )}
+      <SignInPromptModal open={signInOpen} onClose={() => setSignInOpen(false)} reason="save" />
     </article>
   );
 }

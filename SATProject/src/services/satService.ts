@@ -1,5 +1,6 @@
 import type { SatQuestion, AnswerRequest, AnswerResponse, ApiResponse, NextQuestionRequest, NextQuestionResponse, SatBankSummary } from '../types/sat';
 import { API_BASE_URL as API_ROOT } from './apiConfig';
+import { getUsableAuthToken } from './guestTrialService';
 
 const API_BASE_URL = `${API_ROOT}/sat`;
 const DASHBOARD_API_BASE_URL = `${API_ROOT}/dashboard`;
@@ -10,7 +11,7 @@ interface AnswerSummaryPayload {
 }
 
 const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('token');
+  const token = getUsableAuthToken();
   const userStr = localStorage.getItem('user');
   let userId: string | undefined;
   const headers: Record<string, string> = {};
@@ -28,7 +29,7 @@ const getAuthHeaders = (): Record<string, string> => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  if (userId) {
+  if (token && userId) {
     headers['X-User-Id'] = userId;
   }
 
@@ -185,6 +186,33 @@ export class SatService {
       }
     } catch (error) {
       console.error('Failed to submit answer:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check an answer without creating attempt, review, readiness, or mistake records.
+   * Guest practice must use this endpoint so anonymous work remains session-only.
+   */
+  static async checkAnswer(request: Pick<AnswerRequest, 'questionId' | 'answer'>): Promise<AnswerResponse> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/check-answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ questionId: request.questionId, answer: request.answer }),
+      });
+
+      const result: ApiResponse<AnswerResponse> = await response.json();
+
+      if (response.ok && result.code === 200 && result.data) {
+        return result.data;
+      }
+
+      throw new Error(result.message || 'Failed to check your answer.');
+    } catch (error) {
+      console.error('Failed to check answer without recording it:', error);
       throw error;
     }
   }

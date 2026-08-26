@@ -28,6 +28,8 @@ import type {
   Weekday,
 } from '../types/learningCoach';
 import { getDomainDisplayName } from '../utils/domainMapping';
+import { GuestTrialBanner, SignInPromptModal } from '../components/guest';
+import { useGuestAccess } from '../hooks/useGuestAccess';
 
 const WEEKDAYS: Array<{ key: Weekday; short: string }> = [
   { key: 'MONDAY', short: 'Mon' },
@@ -76,6 +78,7 @@ interface PlanTask {
 
 export default function ExamCoachPage() {
   const navigate = useNavigate();
+  const guestAccess = useGuestAccess();
   const [profile, setProfile] = useState<LearningProfile>(DEFAULT_PROFILE);
   const [readiness, setReadiness] = useState<DomainReadiness[]>([]);
   const [overallEvidence, setOverallEvidence] = useState<EvidenceLevel>('LOW');
@@ -83,8 +86,18 @@ export default function ExamCoachPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [signInOpen, setSignInOpen] = useState(false);
 
   const loadCoach = async () => {
+    if (!guestAccess.signedIn) {
+      setProfile(DEFAULT_PROFILE);
+      setReadiness([]);
+      setOverallEvidence('LOW');
+      setReviewSummary(null);
+      setLoadError(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setLoadError(null);
     const [profileResult, readinessResult, reviewResult] = await Promise.allSettled([
@@ -113,7 +126,9 @@ export default function ExamCoachPage() {
 
   useEffect(() => {
     void loadCoach();
-  }, []);
+    // Authentication changes remount the correct account-backed or in-memory plan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guestAccess.signedIn]);
 
   const daysUntilTest = useMemo(() => {
     if (!profile.testDate) return null;
@@ -219,6 +234,10 @@ export default function ExamCoachPage() {
   };
 
   const saveProfile = async () => {
+    if (!guestAccess.signedIn) {
+      setSignInOpen(true);
+      return;
+    }
     setSaving(true);
     try {
       const saved = await LearningCoachService.saveProfile(profile);
@@ -252,6 +271,8 @@ export default function ExamCoachPage() {
           </div>
         </div>
       </section>
+
+      {!guestAccess.signedIn && <GuestTrialBanner alwaysShow className="mt-5" />}
 
       {loadError && <Alert className="mt-5" type="warning" showIcon message="Some planning evidence is temporarily unavailable" description={loadError} action={<Button size="sm" onClick={() => void loadCoach()}><RefreshCw size={15} /> Retry</Button>} />}
 
@@ -324,7 +345,7 @@ export default function ExamCoachPage() {
             </div>
           </fieldset>
 
-          <Button size="lg" className="mt-7 w-full" disabled={saving} onClick={() => void saveProfile()}>{saving ? <RefreshCw size={17} className="animate-spin" /> : <Check size={17} />} {saving ? 'Rebalancing…' : 'Save and rebalance'}</Button>
+          <Button size="lg" className="mt-7 w-full" disabled={saving} onClick={() => void saveProfile()}>{saving ? <RefreshCw size={17} className="animate-spin" /> : <Check size={17} />} {saving ? 'Rebalancing…' : guestAccess.signedIn ? 'Save and rebalance' : 'Sign in to save this plan'}</Button>
         </Card>
 
         <Card className="p-6 sm:p-8">
@@ -366,6 +387,7 @@ export default function ExamCoachPage() {
           ))}
         </div>
       </section>
+      <SignInPromptModal open={signInOpen} onClose={() => setSignInOpen(false)} reason="personalized" />
     </div>
   );
 }

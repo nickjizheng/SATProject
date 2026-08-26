@@ -3,6 +3,7 @@ package com.sts.sale.controller;
 import com.sts.sale.dto.AnswerRequest;
 import com.sts.sale.dto.AnswerResponse;
 import com.sts.sale.dto.ApiResponse;
+import com.sts.sale.dto.GuestAnswerRequest;
 import com.sts.sale.dto.NextQuestionRequest;
 import com.sts.sale.dto.NextQuestionResponse;
 import com.sts.sale.dto.QuestionBankSummary;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** Public SAT practice API with optional JWT-backed personalization. */
+/** Public quality-gated practice and stateless scoring, with authenticated history. */
 @RestController
 @RequestMapping("/api/sat")
 public class SatQuestionController {
@@ -112,6 +113,23 @@ public class SatQuestionController {
         }
     }
 
+    /**
+     * Stateless guest scoring. Identity, sessions, and client persistence fields
+     * are intentionally absent from this contract, and no history is written.
+     */
+    @PostMapping(value = "/check-answer", produces = "application/json")
+    public ApiResponse<AnswerResponse> checkGuestAnswer(
+            @Valid @RequestBody GuestAnswerRequest request) {
+        try {
+            return ApiResponse.success(
+                "答题完成",
+                satQuestionService.checkAnswer(request.getQuestionId(), request.getAnswer())
+            );
+        } catch (Exception e) {
+            return error(e, "答题失败");
+        }
+    }
+
     @PostMapping(value = "/next-question", produces = "application/json")
     public ApiResponse<NextQuestionResponse> getNextQuestion(
             @Valid @RequestBody NextQuestionRequest request,
@@ -135,7 +153,7 @@ public class SatQuestionController {
             return ApiResponse.success(
                 "答题完成",
                 satQuestionService.submitAnswerWithRecord(
-                    request, userResolver.resolveOptional(httpRequest))
+                    request, userResolver.resolveRequired(httpRequest))
             );
         } catch (Exception e) {
             return error(e, "答题失败");
@@ -151,7 +169,7 @@ public class SatQuestionController {
             return ApiResponse.success(
                 "答题记录获取成功",
                 satQuestionService.getRecordedAnswer(
-                    questionId, userResolver.resolveOptional(httpRequest), sessionId)
+                    questionId, userResolver.resolveRequired(httpRequest), sessionId)
             );
         } catch (Exception e) {
             return error(e, "答题记录获取失败");

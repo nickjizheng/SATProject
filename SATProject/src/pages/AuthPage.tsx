@@ -1,22 +1,34 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { CheckCircle2, Sparkles } from 'lucide-react';
 import LoginForm from '../components/LoginForm';
 import RegisterForm from '../components/RegisterForm';
 import Brand from '../components/Brand';
+import { sanitizeReturnPath, type AuthNavigationState } from '../services/guestTrialService';
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
+  const navigationState = location.state && typeof location.state === 'object'
+    ? location.state as Partial<AuthNavigationState>
+    : null;
+  const returnTo = sanitizeReturnPath(searchParams.get('returnTo') || navigationState?.returnTo, '/home');
 
   useEffect(() => setIsLogin(searchParams.get('mode') !== 'register'), [searchParams]);
 
   const setMode = (login: boolean) => {
     setIsLogin(login);
-    navigate(`/auth?mode=${login ? 'login' : 'register'}`);
+    const params = new URLSearchParams({ mode: login ? 'login' : 'register', returnTo });
+    navigate(`/auth?${params.toString()}`, {
+      replace: true,
+      state: { ...navigationState, returnTo } satisfies AuthNavigationState,
+    });
   };
+
+  const finishAuthentication = () => navigate(returnTo, { replace: true });
 
   return (
     <div className="auth-canvas relative min-h-screen overflow-hidden bg-[#173c39] px-3 py-4 sm:px-8 sm:py-6">
@@ -43,9 +55,9 @@ export default function AuthPage() {
           <div className="w-full max-w-[540px]">
             <div className="mb-6 flex justify-center lg:hidden"><Brand inverse /></div>
             {isLogin ? (
-              <LoginForm onSuccess={() => navigate('/home')} onSwitchToRegister={() => setMode(false)} />
+              <LoginForm onSuccess={finishAuthentication} onSwitchToRegister={() => setMode(false)} />
             ) : (
-              <RegisterForm onSuccess={() => navigate('/home')} onSwitchToLogin={() => setMode(true)} />
+              <RegisterForm onSuccess={finishAuthentication} onSwitchToLogin={() => setMode(true)} />
             )}
           </div>
         </motion.section>

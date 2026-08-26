@@ -20,7 +20,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,16 +56,33 @@ class SatQuestionServiceTest {
     }
 
     @Test
-    void scoringRejectsAQuestionOutsideTheQualityGate() {
-        AnswerRequest request = request("submission-1");
+    void guestScoringRejectsAMissingOrUnusableQuestion() {
         when(satQuestionMapper.selectUsableById(42)).thenReturn(null);
 
         IllegalArgumentException exception = assertThrows(
             IllegalArgumentException.class,
-            () -> service.checkAnswer(request)
+            () -> service.checkAnswer(42, "B")
         );
 
         assertTrue(exception.getMessage().contains("quality screen"));
+        verifyNoInteractions(questionAttemptMapper, userAnswerRecordMapper, reviewStateMapper);
+    }
+
+    @Test
+    void guestScoringReturnsSafeFeedbackWithoutAnyPersistence() {
+        when(satQuestionMapper.selectUsableById(42)).thenReturn(question());
+
+        AnswerResponse response = service.checkAnswer(42, "A");
+
+        assertEquals(42, response.getQuestionId());
+        assertEquals("A", response.getUserAnswer());
+        assertEquals("B", response.getCorrectAnswer());
+        assertEquals(false, response.getIsCorrect());
+        assertEquals("Because B is correct.", response.getExplanation());
+        assertNull(response.getReviewStage());
+        assertNull(response.getNextReviewAt());
+        assertNull(response.getIntervalMinutes());
+        verify(satQuestionMapper).selectUsableById(42);
         verifyNoInteractions(questionAttemptMapper, userAnswerRecordMapper, reviewStateMapper);
     }
 
@@ -106,26 +122,16 @@ class SatQuestionServiceTest {
     }
 
     @Test
-    void anonymousSubmissionIsRecordedWithoutPersonalReviewState() {
+    void anonymousRecordingIsRejectedBeforeAnyPersistenceOrQuestionAccess() {
         AnswerRequest request = request("submission-3");
-        request.setAnswer("A");
-        when(satQuestionMapper.selectUsableById(42)).thenReturn(question());
-        when(questionAttemptMapper.findBySubmissionId("submission-3")).thenReturn(null);
-        when(questionAttemptMapper.insertIfAbsent(any())).thenAnswer(invocation -> {
-            QuestionAttempt attempt = invocation.getArgument(0);
-            attempt.setId(92L);
-            return 1;
-        });
-        when(userAnswerRecordMapper.findLatestBySessionIdAndQuestionId("session-1", 42))
-            .thenReturn(null);
 
-        AnswerResponse response = service.submitAnswerWithRecord(request, null);
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> service.submitAnswerWithRecord(request, null));
 
-        assertFalse(response.getIsCorrect());
-        assertNull(response.getReviewStage());
-        assertNull(response.getNextReviewAt());
-        verify(userAnswerRecordMapper).insert(any(UserAnswerRecord.class));
-        verifyNoInteractions(reviewStateMapper);
+        assertTrue(exception.getMessage().contains("Sign in"));
+        verifyNoInteractions(
+            satQuestionMapper, questionAttemptMapper, userAnswerRecordMapper, reviewStateMapper);
     }
 
     @Test

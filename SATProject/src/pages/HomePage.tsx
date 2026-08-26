@@ -7,6 +7,9 @@ import { Card } from '../components/ui/card';
 import { ReviewService } from '../services/reviewService';
 import type { ReviewSummary } from '../types/review';
 import { getUserPreferences, PREFERENCES_EVENT } from '../utils/userPreferences';
+import { GuestTrialBanner } from '../components/guest';
+import { useGuestAccess } from '../hooks/useGuestAccess';
+import { buildAuthPath } from '../services/guestTrialService';
 
 const features = [
   { icon: CalendarRange, title: 'Exam coach', copy: 'A living plan that rebalances around your date, availability and learning evidence.', path: '/exam-coach', tone: 'bg-[#123d3a] text-white' },
@@ -27,16 +30,18 @@ const studyPlans = [
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const guestAccess = useGuestAccess();
   const [selectedPlan, setSelectedPlan] = useState(studyPlans[0]);
   const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(null);
   const [preferences, setPreferences] = useState(getUserPreferences);
 
   useEffect(() => {
-    ReviewService.getSummary().then(setReviewSummary).catch(() => undefined);
+    if (guestAccess.signedIn) ReviewService.getSummary().then(setReviewSummary).catch(() => undefined);
+    else setReviewSummary(null);
     const updatePreferences = () => setPreferences(getUserPreferences());
     window.addEventListener(PREFERENCES_EVENT, updatePreferences);
     return () => window.removeEventListener(PREFERENCES_EVENT, updatePreferences);
-  }, []);
+  }, [guestAccess.signedIn]);
 
   return (
     <div className="page-shell overflow-hidden">
@@ -46,13 +51,13 @@ export default function HomePage() {
           <h1 className="page-title mt-5 max-w-4xl">Study with <em className="font-light text-teal-800">direction</em>, not just repetition.</h1>
           <p className="page-subtitle mt-7 max-w-2xl">A calmer, clearer place to practise questions, understand your performance and turn new vocabulary into lasting knowledge.</p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Button size="lg" onClick={() => navigate('/exam-coach')}>Open my plan <ArrowUpRight size={18} /></Button>
-            <Button size="lg" variant="secondary" onClick={() => navigate('/dashboard')}>View my progress</Button>
+            <Button size="lg" onClick={() => navigate(guestAccess.signedIn ? '/exam-coach' : '/sat-practice')}>{guestAccess.signedIn ? 'Open my plan' : 'Start guest practice'} <ArrowUpRight size={18} /></Button>
+            <Button size="lg" variant="secondary" onClick={() => navigate(guestAccess.signedIn ? '/dashboard' : buildAuthPath('/home'))}>{guestAccess.signedIn ? 'View my progress' : 'Sign in to save'}</Button>
           </div>
           <div className="mt-12 flex flex-wrap gap-x-8 gap-y-4 border-t border-stone-900/10 pt-6 text-sm text-stone-600">
-            <span><strong className="text-stone-900">One account</strong> across every mode</span>
-            <span><strong className="text-stone-900">Memory timing</strong> from every answer</span>
-            <span><strong className="text-stone-900">Exam Coach</strong> keeps the test date and weekly plan in sync</span>
+            <span><strong className="text-stone-900">{guestAccess.signedIn ? 'One account' : 'One guest set'}</strong> {guestAccess.signedIn ? 'across every mode' : 'without creating an account'}</span>
+            <span><strong className="text-stone-900">{guestAccess.signedIn ? 'Memory timing' : 'No answer storage'}</strong> {guestAccess.signedIn ? 'from every answer' : 'until you choose to sign in'}</span>
+            <span><strong className="text-stone-900">Quality-screened practice</strong> with honest provided-key language</span>
           </div>
         </motion.div>
 
@@ -67,7 +72,10 @@ export default function HomePage() {
               </div>
               <p className="mt-16 font-display text-4xl font-medium leading-tight">Small sessions.<br />Measurable momentum.</p>
               <div className="mt-10 grid grid-cols-3 gap-3">
-                {[[String(reviewSummary?.dueNow ?? 0), 'due now'], [String(preferences.dailyReviewGoal), 'daily goal'], [String(Math.max(1, Math.ceil((reviewSummary?.dueNow ?? 0) * 1.5))), 'minutes']].map(([value, label]) => (
+                {(guestAccess.signedIn
+                  ? [[String(reviewSummary?.dueNow ?? 0), 'due now'], [String(preferences.dailyReviewGoal), 'daily goal'], [String(Math.max(1, Math.ceil((reviewSummary?.dueNow ?? 0) * 1.5))), 'minutes']]
+                  : [['1', 'guest set'], ['0', 'saved answers'], ['A–D', 'instant check']]
+                ).map(([value, label]) => (
                   <div key={label} className="rounded-2xl border border-white/10 bg-white/7 p-4">
                     <strong className="block text-xl">{value}</strong><span className="text-[10px] uppercase tracking-wider text-teal-50/45">{label}</span>
                   </div>
@@ -77,6 +85,8 @@ export default function HomePage() {
           </Card>
         </motion.div>
       </section>
+
+      {!guestAccess.signedIn && <GuestTrialBanner alwaysShow className="mb-8" />}
 
       <section className="grid gap-4 pb-8 md:grid-cols-2 xl:grid-cols-4">
         {features.map(({ icon: Icon, title, copy, path, tone }, index) => (

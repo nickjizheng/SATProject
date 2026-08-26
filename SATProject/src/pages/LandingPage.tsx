@@ -103,14 +103,14 @@ export default function LandingPage() {
           </nav>
           <div className="hidden items-center gap-2 md:flex">
             <Button variant="ghost" onClick={() => navigate('/auth?mode=login')}>Log in</Button>
-            <Button onClick={() => navigate('/auth?mode=register')}>Create account <ArrowRight size={16} /></Button>
+            <Button onClick={() => navigate('/sat-practice')}>Try one guest set <ArrowRight size={16} /></Button>
           </div>
           <button onClick={() => setMobileMenu(value => !value)} className="grid size-11 place-items-center rounded-xl border border-stone-900/10 md:hidden">{mobileMenu ? <X /> : <Menu />}</button>
         </div>
         <AnimatePresence>
           {mobileMenu && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-stone-900/10 bg-[#f6f2e8] md:hidden">
-              <div className="space-y-2 p-5"><a href="#experience" className="block p-2 font-bold">Try it</a><a href="#features" className="block p-2 font-bold">Features</a><a href="#workflow" className="block p-2 font-bold">How it works</a><a href="#about" className="block p-2 font-bold">About</a><div className="grid grid-cols-2 gap-2 pt-3"><Button variant="secondary" onClick={() => navigate('/auth?mode=login')}>Log in</Button><Button onClick={() => navigate('/auth?mode=register')}>Create account</Button></div></div>
+              <div className="space-y-2 p-5"><a href="#experience" className="block p-2 font-bold">Try it</a><a href="#features" className="block p-2 font-bold">Features</a><a href="#workflow" className="block p-2 font-bold">How it works</a><a href="#about" className="block p-2 font-bold">About</a><div className="grid grid-cols-2 gap-2 pt-3"><Button variant="secondary" onClick={() => navigate('/auth?mode=login')}>Log in</Button><Button onClick={() => navigate('/sat-practice')}>Guest set</Button></div></div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -123,8 +123,8 @@ export default function LandingPage() {
             <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.18em] text-[#c34f38]"><Sparkles size={14} /> SAT preparation with a memory</p>
             <h1 className="mt-6 max-w-4xl font-display text-[clamp(3.35rem,17vw,4rem)] font-medium leading-[.86] tracking-[-.055em] sm:text-[clamp(4rem,8vw,7.8rem)] sm:leading-[.82] sm:tracking-[-.06em]">Practise.<br /><em className="font-light text-teal-800">Understand.</em><br />Improve.</h1>
             <p className="mt-9 max-w-xl text-lg leading-8 text-stone-600">SAT-Buddy brings question practice, answer feedback, progress analytics and vocabulary tools into one calm workspace, so every session builds on the last.</p>
-            <div className="marketing-hero-actions mt-9 flex flex-wrap gap-3"><Button size="lg" onClick={() => document.querySelector('#experience')?.scrollIntoView({ behavior: 'smooth' })}>Try a sample question <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=login')}>I already have an account</Button></div>
-            <div className="mt-10 flex flex-wrap gap-6 text-xs font-bold uppercase tracking-wider text-stone-500"><span className="flex items-center gap-2"><Check size={15} className="text-teal-700" /> Free to explore</span><span className="flex items-center gap-2"><Check size={15} className="text-teal-700" /> No login for the demo</span></div>
+            <div className="marketing-hero-actions mt-9 flex flex-wrap gap-3"><Button size="lg" onClick={() => navigate('/sat-practice')}>Start one guest set <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => document.querySelector('#experience')?.scrollIntoView({ behavior: 'smooth' })}>Try the sample</Button><Button size="lg" variant="ghost" onClick={() => navigate('/auth?mode=login')}>Log in</Button></div>
+            <div className="mt-10 flex flex-wrap gap-6 text-xs font-bold uppercase tracking-wider text-stone-500"><span className="flex items-center gap-2"><Check size={15} className="text-teal-700" /> Free to explore</span><span className="flex items-center gap-2"><Check size={15} className="text-teal-700" /> No login for one full set</span><span className="flex items-center gap-2"><Check size={15} className="text-teal-700" /> Guest work is not saved</span></div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 28, rotate: 1 }} animate={{ opacity: 1, x: 0, rotate: 0 }} transition={{ delay: .12, duration: .7 }} className="relative z-10">
@@ -193,7 +193,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="px-5 py-24 sm:px-8 lg:py-32"><Card className="mx-auto max-w-[1280px] overflow-hidden bg-[#e96b4d] p-8 text-white sm:p-14"><div className="grid items-end gap-8 lg:grid-cols-[1fr_auto]"><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-white/60">Ready when you are</p><h2 className="mt-4 max-w-3xl font-display text-4xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Turn the next question into useful progress.</h2><p className="mt-6 max-w-xl text-white/70">Create an account to save attempts, synchronize practice modes and build your personal SAT study library.</p></div><div className="marketing-cta-actions flex flex-wrap gap-3"><Button size="lg" className="bg-[#173c39] hover:bg-[#24534f]" onClick={() => navigate('/auth?mode=register')}>Create my account <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=login')}>Log in</Button></div></div></Card></section>
+        <section className="px-5 py-24 sm:px-8 lg:py-32"><Card className="mx-auto max-w-[1280px] overflow-hidden bg-[#e96b4d] p-8 text-white sm:p-14"><div className="grid items-end gap-8 lg:grid-cols-[1fr_auto]"><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-white/60">Ready when you are</p><h2 className="mt-4 max-w-3xl font-display text-4xl font-medium leading-none tracking-[-.045em] sm:text-7xl">Turn the next question into useful progress.</h2><p className="mt-6 max-w-xl text-white/70">Try one set without an account. Sign in only when you want another set, saved attempts, review scheduling, or a personal study library.</p></div><div className="marketing-cta-actions flex flex-wrap gap-3"><Button size="lg" className="bg-[#173c39] hover:bg-[#24534f]" onClick={() => navigate('/sat-practice')}>Try a guest set <ArrowRight size={18} /></Button><Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=register')}>Create account</Button></div></div></Card></section>
       </main>
 
       <footer className="border-t border-stone-900/10 px-5 py-8 sm:px-8"><div className="mx-auto max-w-[1440px]"><TrademarkNotice className="mb-5" /><div className="flex flex-col justify-between gap-4 text-xs text-stone-500 sm:flex-row"><span className="font-bold text-stone-700">SAT-Buddy · By students, for students.</span><a href="mailto:nick.jizheng.li@gmail.com" className="hover:text-[#123d3a]">Nick Jizheng Li · nick.jizheng.li@gmail.com</a></div></div></footer>

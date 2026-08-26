@@ -24,7 +24,10 @@ import { Card } from '../components/ui/card';
 import MathRenderer from '../components/MathRenderer';
 import QuestionVisual from '../components/QuestionVisual';
 import QuestionReportPanel from '../components/QuestionReportPanel';
+import { GuestTrialBanner, SignInPromptModal, type SignInPromptReason } from '../components/guest';
+import { useGuestAccess } from '../hooks/useGuestAccess';
 import { cn } from '../lib/utils';
+import { createGuestTrialOwnerId, guestTrialService } from '../services/guestTrialService';
 import { SatService } from '../services/satService';
 import type { AnswerResponse, SatQuestion } from '../types/sat';
 import { getDomainDisplayName } from '../utils/domainMapping';
@@ -68,6 +71,7 @@ const optionsFor = (question: SatQuestion) => [
 
 export default function PacingLabPage() {
   const navigate = useNavigate();
+  const guestAccess = useGuestAccess();
   const [searchParams] = useSearchParams();
   const [phase, setPhase] = useState<PacingPhase>('setup');
   const [domains, setDomains] = useState<string[]>([]);
@@ -86,11 +90,14 @@ export default function PacingLabPage() {
   const [results, setResults] = useState<PacingResult[]>([]);
   const [submitFailures, setSubmitFailures] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [signInReason, setSignInReason] = useState<SignInPromptReason | null>(null);
   const [sessionId, setSessionId] = useState(createId('pacing-session'));
   const responseTimesRef = useRef<Record<number, number>>({});
   const submissionIdsRef = useRef<Record<number, string>>({});
   const activeSinceRef = useRef(Date.now());
   const finishPanelRef = useRef<HTMLDivElement>(null);
+  const startInFlightRef = useRef(false);
+  const guestTrialOwner = useRef(createGuestTrialOwnerId());
 
   const currentQuestion = questions[index];
 
@@ -160,6 +167,15 @@ export default function PacingLabPage() {
   };
 
   const startSession = async () => {
+    if (startInFlightRef.current) return;
+    startInFlightRef.current = true;
+    const access = await guestTrialService.reserveTrial('pacing', guestTrialOwner.current);
+    if (!access.allowed) {
+      setSignInReason(access.reason);
+      startInFlightRef.current = false;
+      return;
+    }
+
     setPhase('loading');
     setLoadError(null);
     try {
@@ -183,10 +199,19 @@ export default function PacingLabPage() {
       responseTimesRef.current = {};
       submissionIdsRef.current = Object.fromEntries(nextQuestions.map(question => [question.id, createId(`pacing-${question.id}`)]));
       activeSinceRef.current = Date.now();
+      if (access.mode === 'guest-trial') {
+        // The delivered set is the one guest entitlement; answers and notes remain memory-only.
+        guestTrialService.completeTrial('pacing', guestTrialOwner.current);
+      }
       setPhase('running');
     } catch (error) {
+      if (access.mode === 'guest-trial') {
+        guestTrialService.releaseTrial('pacing', guestTrialOwner.current);
+      }
       setLoadError(error instanceof Error ? error.message : 'The pacing session could not be prepared.');
       setPhase('setup');
+    } finally {
+      startInFlightRef.current = false;
     }
   };
 
@@ -232,14 +257,16 @@ export default function PacingLabPage() {
     const settled = await Promise.allSettled(answered.map(async question => {
       const selectedAnswer = answers[question.id];
       const responseTimeMs = Math.max(0, responseTimesRef.current[question.id] || 0);
-      const result = await SatService.submitAnswerWithRecord({
-        questionId: question.id,
-        answer: selectedAnswer,
-        sessionId,
-        submissionId: submissionIdsRef.current[question.id] || createId(`pacing-${question.id}`),
-        studyMode: 'pacing',
-        responseTimeMs,
-      });
+      const result = guestAccess.signedIn
+        ? await SatService.submitAnswerWithRecord({
+          questionId: question.id,
+          answer: selectedAnswer,
+          sessionId,
+          submissionId: submissionIdsRef.current[question.id] || createId(`pacing-${question.id}`),
+          studyMode: 'pacing',
+          responseTimeMs,
+        })
+        : await SatService.checkAnswer({ questionId: question.id, answer: selectedAnswer });
       return { question, selectedAnswer, responseTimeMs, result } satisfies PacingResult;
     }));
 
@@ -247,7 +274,7 @@ export default function PacingLabPage() {
     const failures = settled.length - completed.length;
     setResults(completed);
     setSubmitFailures(failures);
-    if (failures) message.warning('Some answers could not be synced. Your visible session results are still available.');
+    if (failures) message.warning(guestAccess.signedIn ? 'Some answers could not be synced. Your visible session results are still available.' : 'Some answers could not be checked. The completed results are still available on screen.');
     setPhase('results');
   };
 
@@ -291,6 +318,8 @@ export default function PacingLabPage() {
           </Card>
         </section>
 
+        {!guestAccess.signedIn && <GuestTrialBanner alwaysShow className="mt-5" />}
+
         {loadError && <Alert className="mt-5" type="warning" showIcon message="This setup is not available" description={loadError} />}
 
         <section className="mt-7 grid gap-5 lg:grid-cols-[1fr_.72fr]">
@@ -323,12 +352,17 @@ export default function PacingLabPage() {
             <Button size="lg" className="mt-8 w-full" disabled={phase === 'loading'} onClick={() => void startSession()}>{phase === 'loading' ? <RefreshCw size={17} className="animate-spin" /> : <CirclePlay size={18} />} {phase === 'loading' ? 'Preparing…' : 'Start pacing session'}</Button>
           </Card>
         </section>
+        <SignInPromptModal
+          open={Boolean(signInReason)}
+          onClose={() => setSignInReason(null)}
+          reason={signInReason || 'account-required'}
+        />
       </div>
     );
   }
 
   if (phase === 'submitting') {
-    return <div className="page-shell grid min-h-[70vh] place-items-center"><div className="text-center"><Spin size="large" /><h1 className="mt-5 font-display text-3xl font-semibold">Building your pacing review…</h1><p className="mt-2 text-sm text-stone-500">Saving the attempt record and separating speed from accuracy.</p></div></div>;
+    return <div className="page-shell grid min-h-[70vh] place-items-center"><div className="text-center"><Spin size="large" /><h1 className="mt-5 font-display text-3xl font-semibold">Building your pacing review…</h1><p className="mt-2 text-sm text-stone-500">{guestAccess.signedIn ? 'Saving the attempt record and separating speed from accuracy.' : 'Checking answers without creating an attempt record.'}</p></div></div>;
   }
 
   if (phase === 'results') {
@@ -343,7 +377,9 @@ export default function PacingLabPage() {
           </div>
         </section>
 
-        {submitFailures > 0 && <Alert className="mt-5" type="warning" showIcon message="Some attempt records are waiting to sync" description="The review below includes only answers confirmed by the server." />}
+        {!guestAccess.signedIn && <GuestTrialBanner alwaysShow className="mt-5" />}
+
+        {submitFailures > 0 && <Alert className="mt-5" type="warning" showIcon message={guestAccess.signedIn ? 'Some attempt records are waiting to sync' : 'Some answers could not be checked'} description="The review below includes only answers confirmed by the server." />}
 
         <section className="mt-6 grid gap-4 sm:grid-cols-3">
           <Card className="metric-card metric-coral p-6 text-white"><p className="text-xs font-bold text-white/65">Accuracy signal</p><strong className="mt-2 block font-display text-5xl">{accuracy}%</strong><p className="mt-2 text-xs text-white/55">Inside this practice simulation</p></Card>
@@ -398,10 +434,15 @@ export default function PacingLabPage() {
             <div className="mt-7 flex flex-wrap gap-3">
               <Button onClick={() => navigate('/mistakes')}>Open Mistake Lab <ArrowRight size={17} /></Button>
               <Button variant="secondary" onClick={() => navigate('/exam-coach')}>Rebalance my plan</Button>
-              <Button variant="secondary" onClick={reset}><RotateCcw size={16} /> Try another session</Button>
+              <Button variant="secondary" onClick={() => guestAccess.signedIn ? reset() : setSignInReason('trial-completed')}><RotateCcw size={16} /> {guestAccess.signedIn ? 'Try another session' : 'Sign in for another session'}</Button>
             </div>
           </Card>
         </section>
+        <SignInPromptModal
+          open={Boolean(signInReason)}
+          onClose={() => setSignInReason(null)}
+          reason={signInReason || 'account-required'}
+        />
       </div>
     );
   }
@@ -430,6 +471,8 @@ export default function PacingLabPage() {
         </div>
       </header>
 
+      {!guestAccess.signedIn && <GuestTrialBanner alwaysShow className="mb-5" />}
+
       {(paused || confirmFinish) && (
         <div
           ref={finishPanelRef}
@@ -442,7 +485,7 @@ export default function PacingLabPage() {
             <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
               <div className="flex gap-3">
                 <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[#e96b4d] text-white">{timeExpired ? <Timer size={20} /> : confirmFinish ? <ShieldAlert size={20} /> : <CirclePause size={20} />}</span>
-                <div><h2 className="font-display text-2xl font-semibold">{timeExpired ? 'Time is up.' : confirmFinish ? 'Ready to finish?' : 'The clock is paused.'}</h2><p className="mt-1 text-xs leading-5 text-stone-500">{confirmFinish ? `${unansweredCount ? 'Some prompts are unanswered. ' : ''}Submitted answers will be saved and reviewed together.` : 'Resume when you are ready. Paused time does not affect pacing.'}</p></div>
+                <div><h2 className="font-display text-2xl font-semibold">{timeExpired ? 'Time is up.' : confirmFinish ? 'Ready to finish?' : 'The clock is paused.'}</h2><p className="mt-1 text-xs leading-5 text-stone-500">{confirmFinish ? `${unansweredCount ? 'Some prompts are unanswered. ' : ''}${guestAccess.signedIn ? 'Submitted answers will be saved and reviewed together.' : 'Submitted answers will be checked for this on-screen review only.'}` : 'Resume when you are ready. Paused time does not affect pacing.'}</p></div>
               </div>
               <div className="flex gap-2">
                 {!timeExpired && <Button variant="secondary" onClick={() => { setConfirmFinish(false); if (paused) togglePause(); }}>Keep working</Button>}

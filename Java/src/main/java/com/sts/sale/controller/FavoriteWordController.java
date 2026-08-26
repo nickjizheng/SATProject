@@ -4,7 +4,7 @@ import com.sts.sale.dto.ApiResponse;
 import com.sts.sale.dto.FavoriteWordRequest;
 import com.sts.sale.dto.FavoriteWordResponse;
 import com.sts.sale.service.FavoriteWordService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.sts.sale.utils.AuthenticatedUserResolver;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,9 +13,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/favorites")
 public class FavoriteWordController {
-    
-    @Autowired
-    private FavoriteWordService favoriteWordService;
+
+    private final FavoriteWordService favoriteWordService;
+    private final AuthenticatedUserResolver userResolver;
+
+    public FavoriteWordController(FavoriteWordService favoriteWordService,
+                                  AuthenticatedUserResolver userResolver) {
+        this.favoriteWordService = favoriteWordService;
+        this.userResolver = userResolver;
+    }
     
     /**
      * 添加收藏单词
@@ -25,14 +31,11 @@ public class FavoriteWordController {
             @RequestBody FavoriteWordRequest request,
             HttpServletRequest httpRequest) {
         try {
-            // 从请求中获取用户ID（假设从JWT token中解析）
-            Long userId = getCurrentUserId(httpRequest);
-            if (userId == null) {
-                return ApiResponse.error(401, "用户未登录");
-            }
-            
+            Long userId = userResolver.resolveRequired(httpRequest);
             FavoriteWordResponse response = favoriteWordService.addFavoriteWord(userId, request);
             return ApiResponse.success(response);
+        } catch (AuthenticatedUserResolver.AuthenticationException e) {
+            return ApiResponse.error(401, e.getMessage());
         } catch (Exception e) {
             return ApiResponse.error(500, e.getMessage());
         }
@@ -44,13 +47,11 @@ public class FavoriteWordController {
     @GetMapping("/list")
     public ApiResponse<List<FavoriteWordResponse>> getFavoriteWords(HttpServletRequest request) {
         try {
-            Long userId = getCurrentUserId(request);
-            if (userId == null) {
-                return ApiResponse.error(401, "用户未登录");
-            }
-            
+            Long userId = userResolver.resolveRequired(request);
             List<FavoriteWordResponse> favoriteWords = favoriteWordService.getFavoriteWords(userId);
             return ApiResponse.success(favoriteWords);
+        } catch (AuthenticatedUserResolver.AuthenticationException e) {
+            return ApiResponse.error(401, e.getMessage());
         } catch (Exception e) {
             return ApiResponse.error(500, e.getMessage());
         }
@@ -64,13 +65,11 @@ public class FavoriteWordController {
             @PathVariable String word,
             HttpServletRequest request) {
         try {
-            Long userId = getCurrentUserId(request);
-            if (userId == null) {
-                return ApiResponse.error(401, "用户未登录");
-            }
-            
+            Long userId = userResolver.resolveRequired(request);
             favoriteWordService.removeFavoriteWord(userId, word);
             return ApiResponse.success(null);
+        } catch (AuthenticatedUserResolver.AuthenticationException e) {
+            return ApiResponse.error(401, e.getMessage());
         } catch (Exception e) {
             return ApiResponse.error(500, e.getMessage());
         }
@@ -84,33 +83,13 @@ public class FavoriteWordController {
             @PathVariable String word,
             HttpServletRequest request) {
         try {
-            Long userId = getCurrentUserId(request);
-            if (userId == null) {
-                return ApiResponse.error(401, "用户未登录");
-            }
-            
+            Long userId = userResolver.resolveRequired(request);
             boolean isFavorited = favoriteWordService.isWordFavorited(userId, word);
             return ApiResponse.success(isFavorited);
+        } catch (AuthenticatedUserResolver.AuthenticationException e) {
+            return ApiResponse.error(401, e.getMessage());
         } catch (Exception e) {
             return ApiResponse.error(500, e.getMessage());
         }
-    }
-    
-    /**
-     * 从请求中获取当前用户ID
-     * 这里需要根据你的JWT实现来修改
-     */
-    private Long getCurrentUserId(HttpServletRequest request) {
-        // 这里应该从JWT token中解析用户ID
-        // 暂时返回一个模拟的用户ID，实际使用时需要替换
-        String userIdStr = request.getHeader("X-User-Id");
-        if (userIdStr != null) {
-            try {
-                return Long.parseLong(userIdStr);
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-        return null;
     }
 }

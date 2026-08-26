@@ -84,8 +84,13 @@ public class SatQuestionService {
 
     /** Scores only questions admitted by the bank's quality gate. */
     public AnswerResponse checkAnswer(AnswerRequest request) {
-        SatQuestion question = requireUsableQuestion(request.getQuestionId());
-        return mark(question, normalizeAnswer(request.getAnswer()));
+        return checkAnswer(request.getQuestionId(), request.getAnswer());
+    }
+
+    /** Pure scoring path used by the guest trial; this method never persists. */
+    public AnswerResponse checkAnswer(Integer questionId, String answer) {
+        SatQuestion question = requireUsableQuestion(questionId);
+        return mark(question, normalizeAnswer(answer));
     }
 
     public NextQuestionResponse getNextQuestion(NextQuestionRequest request, Long userId) {
@@ -123,10 +128,11 @@ public class SatQuestionService {
      */
     @Transactional
     public AnswerResponse submitAnswerWithRecord(AnswerRequest request, Long userId) {
-        String sessionId = normalize(request.getSessionId());
-        if (userId == null && sessionId == null) {
-            throw new IllegalArgumentException("A practice session is required for anonymous answers.");
+        if (userId == null) {
+            throw new IllegalArgumentException(
+                "Sign in is required to save answer history.");
         }
+        String sessionId = normalize(request.getSessionId());
         if (request.getResponseTimeMs() != null && request.getResponseTimeMs() < 0) {
             throw new IllegalArgumentException("Response time cannot be negative.");
         }
@@ -141,20 +147,17 @@ public class SatQuestionService {
             return responseForExistingAttempt(existingAttempt, question, answer, userId, sessionId);
         }
 
-        Integer legacyUserId = userId == null ? null : toLegacyUserId(userId);
-        UserQuestionReviewState currentState = userId == null
-            ? null
-            : reviewStateMapper.findForUpdate(userId, request.getQuestionId());
+        Integer legacyUserId = toLegacyUserId(userId);
+        UserQuestionReviewState currentState =
+            reviewStateMapper.findForUpdate(userId, request.getQuestionId());
 
         LocalDateTime submittedAt = LocalDateTime.now();
         AnswerResponse response = mark(question, answer);
-        ReviewSchedule schedule = userId == null
-            ? null
-            : intervalPolicy.defaultSchedule(
-                currentState == null ? null : currentState.getStage(),
-                response.getIsCorrect(),
-                submittedAt
-            );
+        ReviewSchedule schedule = intervalPolicy.defaultSchedule(
+            currentState == null ? null : currentState.getStage(),
+            response.getIsCorrect(),
+            submittedAt
+        );
 
         QuestionAttempt attempt = new QuestionAttempt();
         attempt.setSubmissionId(submissionId);
@@ -166,8 +169,8 @@ public class SatQuestionService {
         attempt.setStudyMode(normalize(request.getStudyMode()));
         attempt.setResponseTimeMs(request.getResponseTimeMs());
         attempt.setStageBefore(currentState == null ? null : currentState.getStage());
-        attempt.setDefaultStage(schedule == null ? null : schedule.stage());
-        attempt.setDefaultNextReviewAt(schedule == null ? null : schedule.nextReviewAt());
+        attempt.setDefaultStage(schedule.stage());
+        attempt.setDefaultNextReviewAt(schedule.nextReviewAt());
         attempt.setSubmittedAt(submittedAt);
 
         if (questionAttemptMapper.insertIfAbsent(attempt) != 1) {
@@ -183,12 +186,10 @@ public class SatQuestionService {
             request.getQuestionId(), answer, response.getIsCorrect(), submittedAt,
             sessionId, legacyUserId);
 
-        if (userId != null) {
-            saveReviewState(
-                currentState, userId, request.getQuestionId(), response.getIsCorrect(),
-                submittedAt, attempt.getId(), schedule);
-            applySchedule(response, schedule.stage(), schedule.nextReviewAt(), schedule.interval());
-        }
+        saveReviewState(
+            currentState, userId, request.getQuestionId(), response.getIsCorrect(),
+            submittedAt, attempt.getId(), schedule);
+        applySchedule(response, schedule.stage(), schedule.nextReviewAt(), schedule.interval());
 
         return response;
     }

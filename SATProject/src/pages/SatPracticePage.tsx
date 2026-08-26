@@ -9,12 +9,16 @@ import SatQuestionCard from '../components/SatQuestionCard';
 import { getDomainDisplayName } from '../utils/domainMapping';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+import { GuestTrialBanner, SignInPromptModal, type SignInPromptReason } from '../components/guest';
+import { useGuestAccess } from '../hooks/useGuestAccess';
+import { createGuestTrialOwnerId, guestTrialService } from '../services/guestTrialService';
 import { cn } from '../lib/utils';
 
 const createSubmissionId = () => globalThis.crypto?.randomUUID?.() || `answer-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 export default function SatPracticePage() {
   const [searchParams] = useSearchParams();
+  const guestAccess = useGuestAccess();
   const [questions, setQuestions] = useState<SatQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState('');
@@ -30,9 +34,13 @@ export default function SatPracticePage() {
   const [sessionId] = useState(() => `practice-session-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   const [sessionStats, setSessionStats] = useState({ answered: 0, correct: 0 });
   const [answerSummary, setAnswerSummary] = useState({ answeredQuestions: 0, correctAnswers: 0, accuracy: 0 });
+  const [guestResponses, setGuestResponses] = useState<Record<number, { answer: string; result: AnswerResponse }>>({});
+  const [signInReason, setSignInReason] = useState<SignInPromptReason | null>(null);
   const questionStartedAt = useRef(Date.now());
   const submissionId = useRef(createSubmissionId());
   const submitInFlight = useRef(false);
+  const loadInFlight = useRef(false);
+  const guestTrialOwner = useRef(createGuestTrialOwnerId());
 
   useEffect(() => {
     const initialise = async () => {
@@ -52,6 +60,10 @@ export default function SatPracticePage() {
         }
 
         if (searchParams.get('focus') === 'weakest') {
+          if (!guestAccess.signedIn) {
+            await loadQuestions('', questionCount);
+            return;
+          }
           const stats = await DashboardService.getUserStats();
           const weakest = [...stats.domainStats]
             .filter(domain => domain.totalQuestions > domain.answeredQuestions)
@@ -70,6 +82,7 @@ export default function SatPracticePage() {
   }, []);
 
   const refreshSummary = async () => {
+    if (!guestAccess.signedIn) return;
     try {
       setAnswerSummary(await SatService.getAnswerSummary());
     } catch {
@@ -78,6 +91,15 @@ export default function SatPracticePage() {
   };
 
   const loadQuestions = async (domain = selectedDomain, count = questionCount) => {
+    if (loadInFlight.current) return;
+    loadInFlight.current = true;
+    const access = await guestTrialService.reserveTrial('practice', guestTrialOwner.current);
+    if (!access.allowed) {
+      setSignInReason(access.reason);
+      loadInFlight.current = false;
+      return;
+    }
+
     setLoading(true);
     setHasStarted(true);
     try {
@@ -90,18 +112,34 @@ export default function SatPracticePage() {
       setAnswerResult(null);
       setRestoredFromHistory(false);
       setSessionStats({ answered: 0, correct: 0 });
+      setGuestResponses({});
       questionStartedAt.current = Date.now();
       submissionId.current = createSubmissionId();
+      if (access.mode === 'guest-trial' && nextQuestions.length) {
+        // Consume the one-time entitlement when a real set is delivered. The set itself lives only in React memory.
+        guestTrialService.completeTrial('practice', guestTrialOwner.current);
+      } else if (access.mode === 'guest-trial') {
+        guestTrialService.releaseTrial('practice', guestTrialOwner.current);
+      }
       if (!nextQuestions.length) message.info('No new quality-screened questions match this setup. Try another domain.');
     } catch (error) {
+      if (access.mode === 'guest-trial') {
+        guestTrialService.releaseTrial('practice', guestTrialOwner.current);
+      }
       setQuestions([]);
       message.error(error instanceof Error ? error.message : 'Questions could not be loaded.');
     } finally {
+      loadInFlight.current = false;
       setLoading(false);
     }
   };
 
   const startAdaptive = async () => {
+    if (!guestAccess.signedIn) {
+      await loadQuestions(selectedDomain, questionCount);
+      return;
+    }
+
     setLoading(true);
     try {
       const stats = await DashboardService.getUserStats();
@@ -125,20 +163,25 @@ export default function SatPracticePage() {
     submitInFlight.current = true;
     setSubmitting(true);
     try {
-      const result = await SatService.submitAnswerWithRecord({
-        questionId: question.id,
-        answer: selectedAnswer,
-        sessionId,
-        submissionId: submissionId.current,
-        studyMode: 'practice',
-        responseTimeMs: Math.max(0, Date.now() - questionStartedAt.current),
-      });
+      const result = guestAccess.signedIn
+        ? await SatService.submitAnswerWithRecord({
+          questionId: question.id,
+          answer: selectedAnswer,
+          sessionId,
+          submissionId: submissionId.current,
+          studyMode: 'practice',
+          responseTimeMs: Math.max(0, Date.now() - questionStartedAt.current),
+        })
+        : await SatService.checkAnswer({ questionId: question.id, answer: selectedAnswer });
       setAnswerResult(result);
       setRestoredFromHistory(false);
       setSessionStats(previous => ({ answered: previous.answered + 1, correct: previous.correct + (result.isCorrect ? 1 : 0) }));
+      if (!guestAccess.signedIn) {
+        setGuestResponses(previous => ({ ...previous, [question.id]: { answer: selectedAnswer, result } }));
+      }
       void refreshSummary();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Your answer could not be saved.');
+      message.error(error instanceof Error ? error.message : guestAccess.signedIn ? 'Your answer could not be saved.' : 'Your answer could not be checked.');
     } finally {
       submitInFlight.current = false;
       setSubmitting(false);
@@ -155,6 +198,16 @@ export default function SatPracticePage() {
     setRestoringAnswer(true);
     questionStartedAt.current = Date.now();
     submissionId.current = createSubmissionId();
+    if (!guestAccess.signedIn) {
+      const previous = guestResponses[target.id];
+      if (previous) {
+        setSelectedAnswer(previous.answer);
+        setAnswerResult(previous.result);
+        setRestoredFromHistory(true);
+      }
+      setRestoringAnswer(false);
+      return;
+    }
     try {
       const recorded = await SatService.getRecordedAnswer(target.id, sessionId);
       if (recorded) {
@@ -181,11 +234,15 @@ export default function SatPracticePage() {
           <h1 className="page-title mt-3">Build a session with <em className="font-light text-teal-800">purpose.</em></h1>
           <p className="page-subtitle mt-5">Choose a domain or let SAT-Buddy focus on your weakest area. Practice is quality-screened, but it remains a learning signal rather than an official score source.</p>
         </div>
-        <div className="flex flex-wrap gap-2 text-xs font-bold text-stone-600">
-          <span className="rounded-full border border-stone-900/10 bg-white/70 px-4 py-2">{answerSummary.accuracy}% all-time accuracy</span>
-          <span className="rounded-full border border-stone-900/10 bg-white/70 px-4 py-2">{answerSummary.answeredQuestions} unique answered</span>
-        </div>
+        {guestAccess.signedIn ? (
+          <div className="flex flex-wrap gap-2 text-xs font-bold text-stone-600">
+            <span className="rounded-full border border-stone-900/10 bg-white/70 px-4 py-2">{answerSummary.accuracy}% all-time accuracy</span>
+            <span className="rounded-full border border-stone-900/10 bg-white/70 px-4 py-2">{answerSummary.answeredQuestions} unique answered</span>
+          </div>
+        ) : <span className="rounded-full border border-amber-700/15 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-900">Guest set · no answers saved</span>}
       </header>
+
+      {!guestAccess.signedIn && <GuestTrialBanner alwaysShow className="mb-6" />}
 
       <Card className="mb-7 overflow-hidden p-0">
         <div className="grid lg:grid-cols-[1fr_auto]">
@@ -253,7 +310,7 @@ export default function SatPracticePage() {
                 <Button variant="secondary" size="sm" disabled={currentQuestionIndex === questions.length - 1 || restoringAnswer || submitting} onClick={() => void navigateToQuestion(currentQuestionIndex + 1)} aria-label="Next question"><span className="hidden sm:inline">Next</span> <ArrowRight size={16} /></Button>
               </div>
             </div>
-            {restoredFromHistory && <p className="mt-4 flex items-center gap-2 rounded-xl bg-teal-800/8 px-3 py-2 text-xs font-bold text-teal-900"><CheckCircle2 size={15} /> Saved attempt restored. This answer is locked to protect your history.</p>}
+            {restoredFromHistory && <p className="mt-4 flex items-center gap-2 rounded-xl bg-teal-800/8 px-3 py-2 text-xs font-bold text-teal-900"><CheckCircle2 size={15} /> {guestAccess.signedIn ? 'Saved attempt restored. This answer is locked to protect your history.' : 'Earlier answer restored from this tab only. It is not saved to an account.'}</p>}
           </Card>
 
           <SatQuestionCard
@@ -269,12 +326,17 @@ export default function SatPracticePage() {
 
           {answerResult && (
             <div className={cn('flex flex-col gap-3 rounded-[1.5rem] border p-5 sm:flex-row sm:items-center sm:justify-between', currentQuestionIndex === questions.length - 1 ? 'border-[#e96b4d]/25 bg-[#e96b4d]/8' : 'border-stone-900/10 bg-white/65')}>
-              <div><p className="font-display text-2xl font-semibold">{currentQuestionIndex === questions.length - 1 ? 'Set complete.' : 'Keep the rhythm.'}</p><p className="mt-1 text-xs text-stone-500">Your review date is saved automatically with this attempt.</p></div>
-              {currentQuestionIndex < questions.length - 1 ? <Button onClick={() => void navigateToQuestion(currentQuestionIndex + 1)}>Next question <ArrowRight size={17} /></Button> : <Button onClick={() => void loadQuestions()}>Build another set <RefreshCw size={17} /></Button>}
+              <div><p className="font-display text-2xl font-semibold">{currentQuestionIndex === questions.length - 1 ? 'Set complete.' : 'Keep the rhythm.'}</p><p className="mt-1 text-xs text-stone-500">{guestAccess.signedIn ? 'Your review date is saved automatically with this attempt.' : 'This result stays in the current tab only and is not added to a review schedule.'}</p></div>
+              {currentQuestionIndex < questions.length - 1 ? <Button onClick={() => void navigateToQuestion(currentQuestionIndex + 1)}>Next question <ArrowRight size={17} /></Button> : <Button onClick={() => void loadQuestions()}>{guestAccess.signedIn ? 'Build another set' : 'Sign in for another set'} <RefreshCw size={17} /></Button>}
             </div>
           )}
         </div>
       )}
+      <SignInPromptModal
+        open={Boolean(signInReason)}
+        onClose={() => setSignInReason(null)}
+        reason={signInReason || 'account-required'}
+      />
     </div>
   );
 }

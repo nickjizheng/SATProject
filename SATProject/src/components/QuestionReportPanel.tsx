@@ -5,6 +5,8 @@ import type { QuestionReportReason } from '../types/learning';
 import { questionReportOptions } from '../utils/learningLabels';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
+import { SignInPromptModal } from './guest';
+import { useGuestAccess } from '../hooks/useGuestAccess';
 
 interface QuestionReportPanelProps {
   questionId: number;
@@ -12,15 +14,21 @@ interface QuestionReportPanelProps {
 }
 
 export default function QuestionReportPanel({ questionId, className }: QuestionReportPanelProps) {
+  const guestAccess = useGuestAccess();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<QuestionReportReason | ''>('');
   const [detail, setDetail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [state, setState] = useState<'idle' | 'sent' | 'error'>('idle');
+  const [signInOpen, setSignInOpen] = useState(false);
   const inFlight = useRef(false);
 
   const submit = async () => {
     if (!reason || inFlight.current || state === 'sent') return;
+    if (!guestAccess.signedIn) {
+      setSignInOpen(true);
+      return;
+    }
     inFlight.current = true;
     setSubmitting(true);
     setState('idle');
@@ -39,6 +47,7 @@ export default function QuestionReportPanel({ questionId, className }: QuestionR
   };
 
   return (
+    <>
     <section aria-label="Question quality feedback" className={cn('rounded-2xl border border-stone-900/10 bg-white/55 p-4 sm:p-5', className)}>
       <button
         type="button"
@@ -92,12 +101,20 @@ export default function QuestionReportPanel({ questionId, className }: QuestionR
 
               {state === 'error' && <p role="alert" className="mt-3 flex items-start gap-2 text-xs font-bold leading-5 text-red-700"><AlertCircle className="mt-0.5 shrink-0" size={14} /> The report could not be sent. Try again, or use a different practice item.</p>}
               <Button className="mt-4" size="sm" disabled={!reason || submitting} onClick={() => void submit()}>
-                <Flag size={14} /> {submitting ? 'Sending…' : 'Send report'}
+                <Flag size={14} /> {submitting ? 'Sending…' : guestAccess.signedIn ? 'Send report' : 'Sign in to send report'}
               </Button>
             </>
           )}
         </div>
       )}
     </section>
+    <SignInPromptModal
+      open={signInOpen}
+      onClose={() => setSignInOpen(false)}
+      reason="save"
+      title="Sign in to report this item"
+      description="Reports are tied to an account to reduce duplicate or abusive submissions. Your guest answer remains unsaved."
+    />
+    </>
   );
 }

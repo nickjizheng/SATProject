@@ -3,7 +3,7 @@ import { ConfigProvider } from 'antd';
 import enUS from 'antd/locale/en_US';
 import { lazy, Suspense, useState } from 'react';
 import Navigation from './components/Navigation';
-import AuthGuard from './components/AuthGuard';
+import { AccountFeatureRoute } from './components/guest/AccountFeaturePreview';
 import LandingPage from './pages/LandingPage';
 import TrademarkNotice from './components/TrademarkNotice';
 import './App.css';
@@ -37,19 +37,19 @@ function AppShell() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/home" element={<AuthGuard><HomePage /></AuthGuard>} />
-            <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
-            <Route path="/sat-practice" element={<AuthGuard><SatPracticePage /></AuthGuard>} />
-            <Route path="/sat-single" element={<AuthGuard><SatSingleQuestionPage /></AuthGuard>} />
-            <Route path="/review" element={<AuthGuard><ReviewPage /></AuthGuard>} />
-            <Route path="/exam-coach" element={<AuthGuard><ExamCoachPage /></AuthGuard>} />
-            <Route path="/pacing-lab" element={<AuthGuard><PacingLabPage /></AuthGuard>} />
-            <Route path="/mistakes" element={<AuthGuard><MistakeLabPage /></AuthGuard>} />
-            <Route path="/resources" element={<AuthGuard><ResourcesPage /></AuthGuard>} />
-            <Route path="/dictionary" element={<AuthGuard><DictionaryPage /></AuthGuard>} />
-            <Route path="/favorite-words" element={<AuthGuard><FavoriteWordsPage /></AuthGuard>} />
-            <Route path="/favorite-questions" element={<AuthGuard><FavoriteQuestionsPage /></AuthGuard>} />
-            <Route path="*" element={<Navigate to="/auth?mode=login" replace />} />
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/dashboard" element={<AccountFeatureRoute feature="dashboard"><Dashboard /></AccountFeatureRoute>} />
+            <Route path="/sat-practice" element={<SatPracticePage />} />
+            <Route path="/sat-single" element={<SatSingleQuestionPage />} />
+            <Route path="/review" element={<AccountFeatureRoute feature="review"><ReviewPage /></AccountFeatureRoute>} />
+            <Route path="/exam-coach" element={<ExamCoachPage />} />
+            <Route path="/pacing-lab" element={<PacingLabPage />} />
+            <Route path="/mistakes" element={<AccountFeatureRoute feature="mistakes"><MistakeLabPage /></AccountFeatureRoute>} />
+            <Route path="/resources" element={<ResourcesPage />} />
+            <Route path="/dictionary" element={<DictionaryPage />} />
+            <Route path="/favorite-words" element={<AccountFeatureRoute feature="favorite-words"><FavoriteWordsPage /></AccountFeatureRoute>} />
+            <Route path="/favorite-questions" element={<AccountFeatureRoute feature="favorite-questions"><FavoriteQuestionsPage /></AccountFeatureRoute>} />
+            <Route path="*" element={<Navigate to="/home" replace />} />
           </Routes>
           </Suspense>
           {hasAppChrome && location.pathname !== '/resources' && <TrademarkNotice className="app-trademark-notice" />}

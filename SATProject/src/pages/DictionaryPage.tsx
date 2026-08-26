@@ -6,6 +6,8 @@ import { DictionaryService } from '../services/dictionaryService';
 import DictionaryResult from '../components/DictionaryResult';
 import ErrorBoundary from '../components/ErrorBoundary';
 import type { DictionaryResponse } from '../types/dictionary';
+import { GuestTrialBanner } from '../components/guest';
+import { useGuestAccess } from '../hooks/useGuestAccess';
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -13,6 +15,7 @@ const RECENT_SEARCHES_KEY = 'satBuddyRecentDictionarySearches';
 
 const DictionaryPage: React.FC = () => {
   const navigate = useNavigate();
+  const guestAccess = useGuestAccess();
   const [searchWord, setSearchWord] = useState('');
   const [results, setResults] = useState<DictionaryResponse[]>([]);
   const [loading, setLoading] = useState(false);
@@ -20,17 +23,21 @@ const DictionaryPage: React.FC = () => {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   useEffect(() => {
+    if (!guestAccess.signedIn) {
+      setRecentSearches([]);
+      return;
+    }
     try {
       setRecentSearches(JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]'));
     } catch {
       setRecentSearches([]);
     }
-  }, []);
+  }, [guestAccess.signedIn]);
 
   const rememberSearch = (word: string) => {
     const updated = [word, ...recentSearches.filter(item => item.toLowerCase() !== word.toLowerCase())].slice(0, 5);
     setRecentSearches(updated);
-    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+    if (guestAccess.signedIn) localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
   };
 
   const handleSearch = async (word: string) => {
@@ -89,6 +96,8 @@ const DictionaryPage: React.FC = () => {
           Look up word definitions using Merriam-Webster Dictionary API
         </Text>
       </div>
+
+      {!guestAccess.signedIn && <GuestTrialBanner alwaysShow className="mb-6" />}
 
       {/* Search Section */}
       <Card style={{

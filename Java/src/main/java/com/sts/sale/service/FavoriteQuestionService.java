@@ -30,7 +30,7 @@ public class FavoriteQuestionService {
         // 检查是否已经收藏
         FavoriteQuestion existing = favoriteQuestionMapper.findByUserIdAndQuestionId(userId, request.getQuestionId());
         if (existing != null) {
-            throw new RuntimeException("题目已经收藏过了");
+            throw new IllegalStateException("Question is already saved.");
         }
 
         FavoriteQuestion favoriteQuestion = new FavoriteQuestion();

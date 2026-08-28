@@ -80,8 +80,7 @@ export class DashboardService {
       }
     } catch (error) {
       console.error('Failed to fetch user statistics:', error);
-      // 如果API调用失败，返回模拟数据
-      return this.getMockUserStats();
+      throw error;
     }
   }
 
@@ -122,8 +121,7 @@ export class DashboardService {
       }
     } catch (error) {
       console.error('Failed to fetch recent activity:', error);
-      // 如果API调用失败，返回模拟数据
-      return this.getMockRecentActivities();
+      throw error;
     }
   }
 
@@ -163,110 +161,7 @@ export class DashboardService {
       }
     } catch (error) {
       console.error('Failed to fetch study progress:', error);
-      // 如果API调用失败，返回模拟数据
-      return this.getMockStudyProgress();
+      throw error;
     }
-  }
-
-  /**
-   * 获取模拟用户统计数据
-   */
-  private static getMockUserStats(): UserStats {
-    return {
-      totalQuestions: 2456,
-      answeredQuestions: 342,
-      correctAnswers: 267,
-      favoriteQuestions: 28,
-      favoriteWords: 156,
-      studyStreak: 7,
-      lastStudyDate: new Date().toISOString(),
-      averageScore: 78.1,
-      domainStats: [
-        {
-          domain: 'Reading',
-          totalQuestions: 800,
-          answeredQuestions: 120,
-          correctAnswers: 95,
-          averageScore: 79.2
-        },
-        {
-          domain: 'Writing',
-          totalQuestions: 600,
-          answeredQuestions: 98,
-          correctAnswers: 78,
-          averageScore: 79.6
-        },
-        {
-          domain: 'Math',
-          totalQuestions: 1056,
-          answeredQuestions: 124,
-          correctAnswers: 94,
-          averageScore: 75.8
-        }
-      ]
-    };
-  }
-
-  /**
-   * 获取模拟最近活动数据
-   */
-  private static getMockRecentActivities(): RecentActivity[] {
-    const now = new Date();
-    return [
-      {
-        id: 1,
-        type: 'question_answered',
-        description: 'Completed Math question #1234',
-        timestamp: new Date(now.getTime() - 5 * 60 * 1000).toISOString(),
-        metadata: { questionId: 1234, correct: true }
-      },
-      {
-        id: 2,
-        type: 'favorite_added',
-        description: 'Saved the word "serendipity"',
-        timestamp: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
-        metadata: { word: 'serendipity' }
-      },
-      {
-        id: 3,
-        type: 'question_answered',
-        description: 'Completed Reading question #1233',
-        timestamp: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-        metadata: { questionId: 1233, correct: false }
-      },
-      {
-        id: 4,
-        type: 'favorite_added',
-        description: 'Saved question #1232',
-        timestamp: new Date(now.getTime() - 45 * 60 * 1000).toISOString(),
-        metadata: { questionId: 1232 }
-      },
-      {
-        id: 5,
-        type: 'login',
-        description: 'Logged in',
-        timestamp: new Date(now.getTime() - 60 * 60 * 1000).toISOString()
-      }
-    ];
-  }
-
-  /**
-   * 获取模拟学习进度数据
-   */
-  private static getMockStudyProgress(): StudyProgress[] {
-    const data: StudyProgress[] = [];
-    const now = new Date();
-
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      data.push({
-        date: date.toISOString().split('T')[0],
-        questionsAnswered: Math.floor(Math.random() * 20) + 5,
-        correctAnswers: Math.floor(Math.random() * 15) + 3,
-        studyTime: Math.floor(Math.random() * 60) + 15
-      });
-    }
-
-    return data;
   }
 }

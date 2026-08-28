@@ -1,17 +1,20 @@
 server:
-  port: 8080
-  address: 0.0.0.0  # 监听所有网络接口
+  port: ${PORT:8080}
+  address: 0.0.0.0
 
 socketio:
   host: 0.0.0.0
   port: 9092
 
+jwt:
+  secret: ${JWT_SECRET}
+
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/sat?allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123456nick
+    url: "${DB_URL:jdbc:mysql://localhost:3306/sat?allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai}"
+    username: "${DB_USERNAME:root}"
+    password: "${DB_PASSWORD:}"
   servlet:
     multipart:
       max-file-size: 50MB
@@ -19,16 +22,16 @@ spring:
       enabled: true
       file-size-threshold: 0
   mail:
-    host: smtp.163.com
-    username: lets_chat_auto@163.com
-    password: QBGCBWFZNINYVWXW
+    host: ${MAIL_HOST:smtp.gmail.com}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     protocol: smtp
-    port: 465
-    sslEnable: true
+    port: ${MAIL_PORT:587}
+    sslEnable: ${MAIL_SSL_ENABLE:false}
     default-encoding: UTF-8
     properties:
       mail:
-        from: lets_chat_auto@163.com
+        from: ${MAIL_USERNAME:}
         debug: false
         smtp:
           auth: true
@@ -36,7 +39,7 @@ spring:
           timeout: 120000
           writetimeout: 60000
           ssl:
-            enable: true
+            enable: ${MAIL_SSL_ENABLE:false}
           starttls:
             enable: true
 

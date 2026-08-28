@@ -14,20 +14,27 @@ const DictionaryPage: React.FC = () => {
   const [results, setResults] = useState<DictionaryResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   const handleSearch = async (word: string) => {
     const normalizedWord = word.trim();
 
     if (!normalizedWord) {
+      setValidationError('');
       message.warning('Please enter a word to search');
       return;
     }
 
     if (normalizedWord.length > 225) {
-      message.error('Search terms cannot exceed 225 characters.');
+      const errorMessage = 'Search terms cannot exceed 225 characters.';
+      setValidationError(errorMessage);
+      setResults([]);
+      setHasSearched(false);
+      message.error(errorMessage);
       return;
     }
 
+    setValidationError('');
     setLoading(true);
     setHasSearched(true);
 
@@ -84,7 +91,7 @@ const DictionaryPage: React.FC = () => {
             <Search
               placeholder="Enter a word to look up..."
               value={searchWord}
-              maxLength={225}
+              count={{ show: true, max: 225 }}
               onChange={handleInputChange}
               onSearch={handleSearch}
               onKeyPress={handleKeyPress}
@@ -120,6 +127,16 @@ const DictionaryPage: React.FC = () => {
           </div>
         </Space>
       </Card>
+
+      {validationError && (
+        <Alert
+          message="Invalid Search"
+          description={validationError}
+          type="error"
+          showIcon
+          style={{ marginBottom: '24px' }}
+        />
+      )}
 
       {/* Loading State */}
       {loading && (

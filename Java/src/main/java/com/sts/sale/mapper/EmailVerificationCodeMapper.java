@@ -19,6 +19,13 @@ public interface EmailVerificationCodeMapper extends BaseMapper<EmailVerificatio
      */
     @Select("SELECT * FROM email_verification_codes WHERE email = #{email} AND code = #{code} AND type = #{type} AND used = 0 AND expires_at > #{now}")
     EmailVerificationCode findValidCode(String email, String code, String type, LocalDateTime now);
+
+    /**
+     * Finds the most recent matching code even when it has expired, allowing the
+     * service to report an expired code separately from an incorrect code.
+     */
+    @Select("SELECT * FROM email_verification_codes WHERE email = #{email} AND code = #{code} AND type = #{type} ORDER BY created_at DESC LIMIT 1")
+    EmailVerificationCode findLatestMatchingCode(String email, String code, String type);
     
     /**
      * 标记验证码为已使用

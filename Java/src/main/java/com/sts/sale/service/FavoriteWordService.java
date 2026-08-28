@@ -30,7 +30,7 @@ public class FavoriteWordService {
         // Reject duplicates for this user while allowing other users to save the word.
         FavoriteWord existing = favoriteWordMapper.findByUserIdAndWord(userId, request.getWord());
         if (existing != null) {
-            throw new RuntimeException("单词已经收藏过了");
+            throw new IllegalStateException("Word is already saved.");
         }
 
         // Keep the original JSON payload so its dictionary fields can be rebuilt later.

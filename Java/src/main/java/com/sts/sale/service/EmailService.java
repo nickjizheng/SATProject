@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
+    private static final String VERIFICATION_SUBJECT = "SAT Buddy email verification code";
 
     @Autowired
     private JavaMailSender mailSender;
@@ -31,9 +32,9 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            logger.debug("设置邮件基本信息 - 收件人: {}, 主题: {}", email, "Invitation to Register on FoodSale");
+            logger.debug("设置邮件基本信息 - 收件人: {}, 主题: {}", email, VERIFICATION_SUBJECT);
             helper.setTo(email);
-            helper.setSubject("Invitation to Register on FoodSale");
+            helper.setSubject(VERIFICATION_SUBJECT);
             helper.setFrom(sender);
 
             // 将HTML模板放在此处，并动态插入验证码
@@ -66,7 +67,7 @@ public class EmailService {
                 "    <meta charset=\"UTF-8\">\n" +
                 "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n" +
                 "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
-                "    <title>Invitation to Register on FoodSale</title>\n" +
+                "    <title>SAT Buddy email verification</title>\n" +
                 "    <style>\n" +
                 "      body {\n" +
                 "        font-family: 'Helvetica', Arial, sans-serif;\n" +
@@ -100,9 +101,9 @@ public class EmailService {
                 "  </head>\n" +
                 "  <body>\n" +
                 "    <div class=\"container\">\n" +
-                "      <h2>You're Invited to Register on FoodSale!</h2>\n" +
+                "      <h2>Verify your SAT Buddy account</h2>\n" +
                 "      <p>Dear user,</p>\n" +
-                "      <p>You have been invited to register on FoodSale. Take advantage of our service by creating your account today!</p>\n" +
+                "      <p>Use this code to complete your SAT Buddy registration. The code expires in 5 minutes.</p>\n" +
                 "      <p>Your verification code is: <span class=\"verification-code\">" + verificationCode + "</span></p>\n" +
                 "    </div>\n" +
                 "  </body>\n" +
@@ -119,5 +120,4 @@ public class EmailService {
         return code.substring(0, 1) + "***" + code.substring(code.length() - 1);
     }
 }
-
 

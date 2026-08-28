@@ -69,7 +69,8 @@ public class UserService {
         verificationCode.setEmail(email);
         verificationCode.setCode(code);
         verificationCode.setType("REGISTER");
-        verificationCode.setExpiresAt(LocalDateTime.now().plusMinutes(10)); // 10分钟过期
+        // The registration test specification defines a five-minute validity window.
+        verificationCode.setExpiresAt(LocalDateTime.now().plusMinutes(5));
         verificationCode.setUsed(false);
         verificationCode.setCreatedAt(LocalDateTime.now());
         
@@ -101,15 +102,15 @@ public class UserService {
         }
         
         // 验证验证码
-        EmailVerificationCode validCode = emailVerificationCodeMapper.findValidCode(
-            request.getEmail(), 
-            request.getVerificationCode(), 
-            "REGISTER", 
-            LocalDateTime.now()
+        EmailVerificationCode validCode = emailVerificationCodeMapper.findLatestMatchingCode(
+            request.getEmail(), request.getVerificationCode(), "REGISTER"
         );
-        
-        if (validCode == null) {
-            throw new RuntimeException("验证码无效或已过期");
+
+        if (validCode == null || Boolean.TRUE.equals(validCode.getUsed())) {
+            throw new RuntimeException("Invalid verification code.");
+        }
+        if (!validCode.getExpiresAt().isAfter(LocalDateTime.now())) {
+            throw new RuntimeException("Verification code has expired.");
         }
         
         // 标记验证码为已使用

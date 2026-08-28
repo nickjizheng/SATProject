@@ -1,6 +1,9 @@
 package com.sts.sale.controller;
 
 import com.sts.sale.dto.*;
+import com.sts.sale.security.AuthenticatedUserResolver;
+import com.sts.sale.security.AuthenticatedUserResolver.AuthenticationRequiredException;
+import com.sts.sale.security.AuthenticatedUserResolver.UserAccessDeniedException;
 import com.sts.sale.service.SatQuestionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -19,6 +22,9 @@ public class SatQuestionController {
     @Autowired
     private SatQuestionService satQuestionService;
 
+    @Autowired
+    private AuthenticatedUserResolver authenticatedUserResolver;
+
     /**
      * 获取随机题目
      * @param count 题目数量，默认10道
@@ -26,12 +32,16 @@ public class SatQuestionController {
      */
     @GetMapping(value = "/questions/random", produces = "application/json")
     public ApiResponse<List<SatQuestionResponse>> getRandomQuestions(
-            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            HttpServletRequest httpRequest,
             @RequestParam(defaultValue = "10") int count) {
         try {
-            Integer userId = parseOptionalUserId(userIdHeader);
+            Integer userId = authenticatedUserResolver.resolveOptionalInteger(httpRequest);
             List<SatQuestionResponse> questions = satQuestionService.getRandomQuestions(count, userId);
             return ApiResponse.success("获取题目成功", questions);
+        } catch (AuthenticationRequiredException e) {
+            return ApiResponse.error(401, e.getMessage());
+        } catch (UserAccessDeniedException e) {
+            return ApiResponse.error(403, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("获取题目失败: " + e.getMessage());
@@ -46,13 +56,17 @@ public class SatQuestionController {
      */
     @GetMapping(value = "/questions/domain/{domain}", produces = "application/json")
     public ApiResponse<List<SatQuestionResponse>> getQuestionsByDomain(
-            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            HttpServletRequest httpRequest,
             @PathVariable String domain,
             @RequestParam(defaultValue = "10") int count) {
         try {
-            Integer userId = parseOptionalUserId(userIdHeader);
+            Integer userId = authenticatedUserResolver.resolveOptionalInteger(httpRequest);
             List<SatQuestionResponse> questions = satQuestionService.getQuestionsByDomain(domain, count, userId);
             return ApiResponse.success("获取题目成功", questions);
+        } catch (AuthenticationRequiredException e) {
+            return ApiResponse.error(401, e.getMessage());
+        } catch (UserAccessDeniedException e) {
+            return ApiResponse.error(403, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("获取题目失败: " + e.getMessage());
@@ -116,12 +130,16 @@ public class SatQuestionController {
      */
     @PostMapping(value = "/next-question", produces = "application/json")
     public ApiResponse<NextQuestionResponse> getNextQuestion(
-            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            HttpServletRequest httpRequest,
             @Valid @RequestBody NextQuestionRequest request) {
         try {
-            Integer userId = parseOptionalUserId(userIdHeader);
+            Integer userId = authenticatedUserResolver.resolveOptionalInteger(httpRequest);
             NextQuestionResponse response = satQuestionService.getNextQuestion(request, userId);
             return ApiResponse.success("获取题目成功", response);
+        } catch (AuthenticationRequiredException e) {
+            return ApiResponse.error(401, e.getMessage());
+        } catch (UserAccessDeniedException e) {
+            return ApiResponse.error(403, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("获取题目失败: " + e.getMessage());
@@ -139,9 +157,13 @@ public class SatQuestionController {
             @Valid @RequestBody AnswerRequest request,
             HttpServletRequest httpRequest) {
         try {
-            Integer userId = parseOptionalUserId(httpRequest.getHeader("X-User-Id"));
+            Integer userId = authenticatedUserResolver.resolveOptionalInteger(httpRequest);
             AnswerResponse response = satQuestionService.submitAnswerWithRecord(request, userId);
             return ApiResponse.success("答题完成", response);
+        } catch (AuthenticationRequiredException e) {
+            return ApiResponse.error(401, e.getMessage());
+        } catch (UserAccessDeniedException e) {
+            return ApiResponse.error(403, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("答题失败: " + e.getMessage());
@@ -154,12 +176,16 @@ public class SatQuestionController {
     @GetMapping(value = "/answer-record/{questionId}", produces = "application/json")
     public ApiResponse<AnswerResponse> getRecordedAnswer(
             @PathVariable Integer questionId,
-            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
-            @RequestParam(required = false) String sessionId) {
+            @RequestParam(required = false) String sessionId,
+            HttpServletRequest httpRequest) {
         try {
-            Integer userId = parseOptionalUserId(userIdHeader);
+            Integer userId = authenticatedUserResolver.resolveOptionalInteger(httpRequest);
             AnswerResponse response = satQuestionService.getRecordedAnswer(questionId, userId, sessionId);
             return ApiResponse.success("答题记录获取成功", response);
+        } catch (AuthenticationRequiredException e) {
+            return ApiResponse.error(401, e.getMessage());
+        } catch (UserAccessDeniedException e) {
+            return ApiResponse.error(403, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("答题记录获取失败: " + e.getMessage());
@@ -181,15 +207,4 @@ public class SatQuestionController {
         }
     }
 
-    private Integer parseOptionalUserId(String userIdHeader) {
-        if (userIdHeader == null || userIdHeader.trim().isEmpty()) {
-            return null;
-        }
-
-        try {
-            return Integer.parseInt(userIdHeader);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("用户ID格式错误");
-        }
-    }
 }
